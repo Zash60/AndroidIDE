@@ -7,8 +7,6 @@ plugins {
 val versionMajor = 1
 val versionMinor = 0
 val versionPatch = 0
-
-// Correção do versionNameSuffix
 val versionNameSuffix: String = project.findProperty("versionNameSuffix")?.toString() ?: ""
 
 android {
@@ -27,6 +25,9 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+
+        // ✅ ADICIONAR: Habilitar Multidex
+        multiDexEnabled = true
     }
 
     signingConfigs {
@@ -65,6 +66,9 @@ android {
     }
 
     compileOptions {
+        // ✅ ADICIONAR: Habilitar Core Library Desugaring
+        isCoreLibraryDesugaringEnabled = true
+        
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -75,7 +79,7 @@ android {
 
     buildFeatures {
         viewBinding = true
-        buildConfig = true  // Habilitado explicitamente aqui
+        buildConfig = true
     }
 
     packaging {
@@ -90,7 +94,8 @@ android {
                 "META-INF/notice.txt",
                 "META-INF/*.kotlin_module",
                 "META-INF/AL2.0",
-                "META-INF/LGPL2.1"
+                "META-INF/LGPL2.1",
+                "META-INF/versions/9/previous-compilation-data.bin"
             )
         }
         jniLibs {
@@ -105,6 +110,9 @@ android {
 }
 
 dependencies {
+    // ✅ ADICIONAR: Core Library Desugaring
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
+
     // AndroidX Core
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.appcompat:appcompat:1.6.1")
@@ -138,7 +146,7 @@ dependencies {
     // APK Signing
     implementation("com.android.tools.build:apksig:8.2.0")
 
-    // Code Editor
+    // Code Editor - Sora Editor
     implementation("io.github.Rosemoe.sora-editor:editor:0.23.2")
     implementation("io.github.Rosemoe.sora-editor:language-textmate:0.23.2")
 
