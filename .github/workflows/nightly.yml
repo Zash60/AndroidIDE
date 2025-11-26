@@ -1,0 +1,115 @@
+name: Nightly Build
+
+on:
+  schedule:
+    # Executa todo dia às 2:00 UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+env:
+  JAVA_VERSION: '17'
+
+jobs:
+  check-changes:
+    name: Check for Changes
+    runs-on: ubuntu-latest
+    outputs:
+      should_build: ${{ steps.check.outputs.should_build }}
+    
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: 🔍 Check for Changes
+        id: check
+        run: |
+          # Verificar se houve commits nas últimas 24h
+          CHANGES=$(git log --oneline --since="24 hours ago" | wc -l)
+          if [ "$CHANGES" -gt 0 ] || [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "should_build=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_build=false" >> $GITHUB_OUTPUT
+          fi
+
+  nightly:
+    name: Nightly Build
+    needs: check-changes
+    if: needs.check-changes.outputs.should_build == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: ☕ Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: 🤖 Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: 📥 Download SDK Dependencies
+        run: |
+          chmod +x ./scripts/download-sdk.sh
+          ./scripts/download-sdk.sh
+
+      - name: 🔑 Grant Execute Permission
+        run: chmod +x gradlew
+
+      - name: 🔨 Build Nightly APK
+        run: |
+          # Adicionar sufixo nightly ao versionName
+          DATE=$(date +'%Y%m%d')
+          ./gradlew assembleDebug \
+            -PversionNameSuffix=-nightly-$DATE \
+            --stacktrace
+
+      - name: 📝 Get Build Info
+        id: info
+        run: |
+          DATE=$(date +'%Y-%m-%d')
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          echo "date=$DATE" >> $GITHUB_OUTPUT
+          echo "short_sha=$SHORT_SHA" >> $GITHUB_OUTPUT
+
+      - name: 📝 Rename APK
+        run: |
+          mv app/build/outputs/apk/debug/app-debug.apk \
+             app/build/outputs/apk/debug/AndroidIDE-nightly-${{ steps.info.outputs.date }}.apk
+
+      - name: 📤 Upload Nightly APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: AndroidIDE-nightly-${{ steps.info.outputs.date }}
+          path: app/build/outputs/apk/debug/AndroidIDE-nightly-${{ steps.info.outputs.date }}.apk
+          retention-days: 7
+
+      - name: 🗑️ Delete Old Nightly Artifacts
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const artifacts = await github.rest.actions.listArtifactsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 100
+            });
+            
+            const nightlyArtifacts = artifacts.data.artifacts
+              .filter(a => a.name.startsWith('AndroidIDE-nightly-'))
+              .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            
+            // Manter apenas os últimos 7
+            for (const artifact of nightlyArtifacts.slice(7)) {
+              await github.rest.actions.deleteArtifact({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                artifact_id: artifact.id
+              });
+              console.log(`Deleted: ${artifact.name}`);
+            }
