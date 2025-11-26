@@ -19,6 +19,7 @@ android {
 
     packaging {
         resources {
+            // Exclui arquivos de metadados inúteis que causam conflitos
             excludes += listOf(
                 "META-INF/DEPENDENCIES",
                 "META-INF/LICENSE",
@@ -35,6 +36,18 @@ android {
                 "META-INF/services/javax.annotation.processing.Processor",
                 "META-INF/versions/9/module-info.class",
                 "module-info.class"
+            )
+            
+            // Resolve o conflito "2 files found with path" escolhendo a primeira ocorrência
+            // Isso corrige o erro do kotlin-compiler-embeddable colidindo com o stdlib
+            pickFirsts += listOf(
+                "kotlin/reflect/reflect.kotlin_builtins",
+                "kotlin/kotlin.kotlin_builtins",
+                "kotlin/collections/collections.kotlin_builtins",
+                "kotlin/ranges/ranges.kotlin_builtins",
+                "kotlin/annotation/annotation.kotlin_builtins",
+                "kotlin/internal/internal.kotlin_builtins",
+                "kotlin/coroutines/coroutines.kotlin_builtins"
             )
         }
     }
@@ -72,6 +85,8 @@ dependencies {
     // Compilers & Tools
     implementation("com.android.tools:r8:8.2.42")
     implementation("com.android.tools.build:apksig:8.2.0")
+    
+    // Forçar versão exata para evitar mismatch
     implementation("org.jetbrains.kotlin:kotlin-compiler-embeddable:1.9.21")
     implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.21")
 
