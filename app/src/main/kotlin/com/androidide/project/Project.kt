@@ -18,14 +18,18 @@ data class Project(
     var lastModified: Long = System.currentTimeMillis()
 ) : Parcelable {
 
-    // Propriedades auxiliares necessárias para o compilador
     val projectDir: File get() = File(path)
     val buildDir: File get() = File(projectDir, "build")
+    
+    // Caminhos de código fonte
     val srcDir: File get() = File(projectDir, "app/src/main")
     val resDir: File get() = File(srcDir, "res")
-    val manifestFile: File get() = File(srcDir, "AndroidManifest.xml")
+    val kotlinDir: File get() = File(srcDir, "kotlin") // Adicionado
+    val javaDir: File get() = File(srcDir, "java")     // Adicionado
     
-    // Estrutura de pacotes
+    val manifestFile: File get() = File(srcDir, "AndroidManifest.xml")
+    val outputDir: File get() = File(buildDir, "outputs")
+    
     val packagePath: String get() = packageName.replace(".", "/")
 
     companion object {
