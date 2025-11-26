@@ -14,11 +14,11 @@ class ProjectCompiler(
     private val onProgress: (BuildStep, String) -> Unit
 ) {
 
-    private val buildDir = project.buildDir
-    // Usando construtor explícito para evitar ambiguidade
-    private val classesDir = File(buildDir.absolutePath, "classes")
-    private val dexDir = File(buildDir.absolutePath, "dex")
-    private val apkDir = File(buildDir.absolutePath, "apk")
+    // Resolve ambiguidade convertendo para String explicitamente
+    private val buildDirPath: String = project.buildDir.absolutePath
+    private val classesDir = File(buildDirPath, "classes")
+    private val dexDir = File(buildDirPath, "dex")
+    private val apkDir = File(buildDirPath, "apk")
 
     suspend fun compile(): BuildResult = withContext(Dispatchers.IO) {
         val startTime = System.currentTimeMillis()
@@ -30,7 +30,7 @@ class ProjectCompiler(
             createBuildDirs()
 
             onProgress(BuildStep.COMPILING_RESOURCES, "Compilando recursos...")
-            val resourceResult = compileResources()
+            val resourceResult = ResourceCompiler(project).compile()
             if (!resourceResult.success) return@withContext resourceResult
 
             onProgress(BuildStep.COMPILING_KOTLIN, "Compilando código...")
@@ -38,11 +38,15 @@ class ProjectCompiler(
             if (!compileResult.success) return@withContext compileResult
 
             onProgress(BuildStep.CREATING_DEX, "Criando DEX...")
-            val dexResult = createDex()
+            val dexResult = DexCompiler().compile(classesDir, dexDir)
             if (!dexResult.success) return@withContext dexResult
 
             onProgress(BuildStep.PACKAGING, "Empacotando APK...")
-            val apkResult = packageApk()
+            val apkResult = ApkBuilder(project).build(
+                dexDir = dexDir,
+                resourcesApk = File(project.buildDir, "res/resources.ap_"),
+                outputDir = apkDir
+            )
             if (!apkResult.success) return@withContext apkResult
 
             onProgress(BuildStep.SIGNING, "Assinando APK...")
@@ -59,23 +63,20 @@ class ProjectCompiler(
             )
 
         } catch (e: Exception) {
+            e.printStackTrace()
             errors.add(BuildError(message = "Erro fatal: ${e.message}"))
             BuildResult(success = false, errors = errors)
         }
     }
 
     private fun cleanBuildDir() {
-        buildDir.deleteRecursively()
+        project.buildDir.deleteRecursively()
     }
 
     private fun createBuildDirs() {
         classesDir.mkdirs()
         dexDir.mkdirs()
         apkDir.mkdirs()
-    }
-
-    private suspend fun compileResources(): BuildResult = withContext(Dispatchers.IO) {
-        ResourceCompiler(project).compile()
     }
 
     private suspend fun compileSource(): BuildResult = withContext(Dispatchers.IO) {
@@ -92,30 +93,17 @@ class ProjectCompiler(
         // Compila Kotlin
         if (kotlinFiles.isNotEmpty()) {
             val kResult = KotlinCompiler().compile(kotlinFiles, classesDir, classpath)
-            if (!kResult.success) return@withContext kResult
+            if (!kResult.success) return kResult
         }
 
         // Compila Java
         if (javaFiles.isNotEmpty()) {
-            // Adiciona classesDir ao classpath para que Java veja o Kotlin compilado
             val javaClasspath = classpath + classesDir
             val jResult = JavaCompiler().compile(javaFiles, classesDir, javaClasspath)
-            if (!jResult.success) return@withContext jResult
+            if (!jResult.success) return jResult
         }
 
         BuildResult(success = true)
-    }
-
-    private suspend fun createDex(): BuildResult = withContext(Dispatchers.IO) {
-        DexCompiler().compile(classesDir, dexDir)
-    }
-
-    private suspend fun packageApk(): BuildResult = withContext(Dispatchers.IO) {
-        ApkBuilder(project).build(
-            dexDir = dexDir,
-            resourcesApk = File(project.buildDir, "res/resources.ap_"),
-            outputDir = apkDir
-        )
     }
 
     private suspend fun signApk(): BuildResult = withContext(Dispatchers.IO) {
@@ -127,15 +115,16 @@ class ProjectCompiler(
             unsigned.delete()
             BuildResult(success = true, apkPath = signed.absolutePath)
         } catch (e: Exception) {
+            e.printStackTrace()
             BuildResult(success = false, errors = listOf(BuildError(message = e.message ?: "Erro ao assinar")))
         }
     }
 
     private fun getClasspath(): List<File> {
         val cp = mutableListOf<File>()
-        // Adiciona android.jar e kotlin-stdlib
-        File(App.sdkDir, "android.jar").let { if(it.exists()) cp.add(it) }
-        File(App.sdkDir, "kotlin-stdlib.jar").let { if(it.exists()) cp.add(it) }
+        val sdkDir = App.sdkDir
+        File(sdkDir, "android.jar").let { if(it.exists()) cp.add(it) }
+        File(sdkDir, "kotlin-stdlib.jar").let { if(it.exists()) cp.add(it) }
         return cp
     }
 }
