@@ -17,18 +17,18 @@ android {
         multiDexEnabled = true
     }
 
-    buildTypes {
-        debug {
-            isDebuggable = true
-            applicationIdSuffix = ".debug"
-        }
-        release {
-            isMinifyEnabled = false
+    packaging {
+        resources {
+            excludes += listOf(
+                "META-INF/DEPENDENCIES", "META-INF/LICENSE", "META-INF/LICENSE.txt",
+                "META-INF/license.txt", "META-INF/NOTICE", "META-INF/NOTICE.txt",
+                "META-INF/notice.txt", "META-INF/ASL2.0", "META-INF/*.kotlin_module",
+                "**/*.kotlin_metadata", "META-INF/services/javax.annotation.processing.Processor"
+            )
         }
     }
 
     compileOptions {
-        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -39,45 +39,33 @@ android {
 
     buildFeatures {
         viewBinding = true
-        buildConfig = true
-    }
-
-    packaging {
-        resources {
-            excludes += listOf(
-                "META-INF/DEPENDENCIES",
-                "META-INF/LICENSE",
-                "META-INF/LICENSE.txt",
-                "META-INF/NOTICE",
-                "META-INF/NOTICE.txt",
-                "META-INF/*.kotlin_module",
-                "META-INF/AL2.0",
-                "META-INF/LGPL2.1",
-                "META-INF/versions/9/previous-compilation-data.bin"
-            )
-        }
-    }
-
-    lint {
-        abortOnError = false
     }
 }
 
 dependencies {
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
-
+    // Android X
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.android.material:material:1.11.0")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
+    
+    // UI Libraries
     implementation("androidx.recyclerview:recyclerview:1.3.2")
     implementation("androidx.drawerlayout:drawerlayout:1.2.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.2")
-    implementation("androidx.activity:activity-ktx:1.8.2")
-    implementation("androidx.fragment:fragment-ktx:1.6.2")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     implementation("io.github.Rosemoe.sora-editor:editor:0.23.2")
     implementation("io.github.Rosemoe.sora-editor:language-textmate:0.23.2")
+
+    // Compilers & Tools (As dependências que faltavam)
+    implementation("com.android.tools:r8:8.2.42")
+    implementation("com.android.tools.build:apksig:8.2.0")
+    // Usamos compileOnly para o compilador Kotlin para não inflar demais o APK, 
+    // mas se for rodar no device, precisa ser implementation
+    implementation("org.jetbrains.kotlin:kotlin-compiler-embeddable:1.9.21")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.21")
+
+    // Utils
     implementation("com.google.code.gson:gson:2.10.1")
+    implementation("commons-io:commons-io:2.15.1")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 }
