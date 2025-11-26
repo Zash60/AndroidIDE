@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    
+    <item
+        android:id="@+id/action_save"
+        android:icon="@android:drawable/ic_menu_save"
+        android:title="@string/action_save"
+        app:showAsAction="always" />
+        
+    <item
+        android:id="@+id/action_build"
+        android:icon="@android:drawable/ic_media_play"
+        android:title="@string/action_build"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/action_undo"
+        android:icon="@android:drawable/ic_menu_revert"
+        android:title="Undo"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/action_redo"
+        android:icon="@android:drawable/ic_menu_rotate"
+        android:title="Redo"
+        app:showAsAction="ifRoom" />
+        
+    <item
+        android:id="@+id/action_save_all"
+        android:title="Save All"
+        app:showAsAction="never" />
+        
+    <item
+        android:id="@+id/action_find"
+        android:title="Find"
+        app:showAsAction="never" />
+        
+    <item
+        android:id="@+id/action_close_tab"
+        android:title="Close Tab"
+        app:showAsAction="never" />
+</menu>
