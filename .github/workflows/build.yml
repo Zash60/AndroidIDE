@@ -2,24 +2,15 @@ name: Build Android IDE
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main ]
   pull_request:
     branches: [ main ]
   workflow_dispatch:
-    inputs:
-      build_type:
-        description: 'Build Type'
-        required: true
-        default: 'debug'
-        type: choice
-        options:
-          - debug
-          - release
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 30
 
     steps:
       - name: 📥 Checkout
@@ -40,27 +31,17 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: 📦 Install SDK Components
-        run: |
-          sdkmanager "platforms;android-34" "build-tools;34.0.0"
+        run: sdkmanager "platforms;android-34" "build-tools;34.0.0"
 
       - name: 🔨 Generate Gradle Wrapper
         run: |
-          if [ ! -f "gradlew" ]; then
-            gradle wrapper --gradle-version 8.5
-          fi
+          gradle wrapper --gradle-version 8.5
           chmod +x gradlew
 
-      - name: 📥 Download SDK Assets
+      - name: 📁 Create Project Structure
         run: |
-          mkdir -p app/src/main/assets/sdk
-          
-          # Android JAR
-          curl -L -o app/src/main/assets/sdk/android.jar \
-            "https://github.com/nicco88/android-jar/raw/master/android-34/android.jar" || echo "Skipped android.jar"
-          
-          # Kotlin Stdlib
-          curl -L -o app/src/main/assets/sdk/kotlin-stdlib.jar \
-            "https://repo1.maven.org/maven2/org/jetbrains/kotlin/kotlin-stdlib/1.9.21/kotlin-stdlib-1.9.21.jar" || echo "Skipped kotlin-stdlib"
+          chmod +x scripts/create-project-structure.sh
+          ./scripts/create-project-structure.sh
 
       - name: 📋 Cache Gradle
         uses: actions/cache@v4
@@ -69,36 +50,13 @@ jobs:
             ~/.gradle/caches
             ~/.gradle/wrapper
           key: gradle-${{ hashFiles('**/*.gradle*') }}
-          restore-keys: gradle-
 
       - name: 🔨 Build Debug APK
-        if: github.event.inputs.build_type != 'release'
-        run: ./gradlew assembleDebug --stacktrace --warning-mode all
+        run: ./gradlew assembleDebug --stacktrace
 
-      - name: 🔨 Build Release APK
-        if: github.event.inputs.build_type == 'release'
-        run: ./gradlew assembleRelease --stacktrace --warning-mode all
-
-      - name: 📤 Upload Debug APK
-        if: github.event.inputs.build_type != 'release'
+      - name: 📤 Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: AndroidIDE-debug-${{ github.sha }}
+          name: AndroidIDE-debug
           path: app/build/outputs/apk/debug/*.apk
           retention-days: 30
-
-      - name: 📤 Upload Release APK
-        if: github.event.inputs.build_type == 'release'
-        uses: actions/upload-artifact@v4
-        with:
-          name: AndroidIDE-release-${{ github.sha }}
-          path: app/build/outputs/apk/release/*.apk
-          retention-days: 90
-
-      - name: 📊 Build Summary
-        if: success()
-        run: |
-          echo "## ✅ Build Successful!" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "**Build Type:** ${{ github.event.inputs.build_type || 'debug' }}" >> $GITHUB_STEP_SUMMARY
