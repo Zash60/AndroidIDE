@@ -30,21 +30,13 @@ class KotlinCompiler {
                 message: String,
                 location: CompilerMessageSourceLocation?
             ) {
-                when (severity) {
-                    CompilerMessageSeverity.ERROR,
-                    CompilerMessageSeverity.EXCEPTION -> {
-                        errors.add(BuildError(
-                            file = location?.path ?: "",
-                            line = location?.line ?: 0,
-                            column = location?.column ?: 0,
-                            message = message
-                        ))
-                    }
-                    CompilerMessageSeverity.WARNING,
-                    CompilerMessageSeverity.STRONG_WARNING -> {
-                        warnings.add(message)
-                    }
-                    else -> {}
+                if (severity.isError) {
+                    errors.add(BuildError(
+                        file = location?.path ?: "",
+                        line = location?.line ?: 0,
+                        column = location?.column ?: 0,
+                        message = message
+                    ))
                 }
             }
         }
@@ -54,7 +46,7 @@ class KotlinCompiler {
             destination = outputDir.absolutePath
             this.classpath = classpath.joinToString(File.pathSeparator) { it.absolutePath }
             jvmTarget = "17"
-            noStdlib = false
+            noStdlib = true
             noReflect = true
         }
 
