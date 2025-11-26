@@ -38,18 +38,24 @@ jobs:
           gradle wrapper --gradle-version 8.5
           chmod +x gradlew
 
-      - name: 📁 Create Project Structure
+      # Criação manual das pastas necessárias para que o build não falhe por falta de arquivos
+      - name: 📂 Ensure Project Structure
         run: |
-          chmod +x scripts/create-project-structure.sh
-          ./scripts/create-project-structure.sh
+          mkdir -p app/src/main/assets/sdk
+          mkdir -p app/src/main/res/values
+          mkdir -p app/src/main/res/layout
+          mkdir -p app/src/main/res/drawable
 
-      - name: 📋 Cache Gradle
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: gradle-${{ hashFiles('**/*.gradle*') }}
+      - name: 📥 Download Dependencies (Inline)
+        run: |
+          # Download Android JAR se não existir
+          if [ ! -f "app/src/main/assets/sdk/android.jar" ]; then
+             curl -L "https://github.com/nicco88/android-jar/raw/master/android-34/android.jar" -o "app/src/main/assets/sdk/android.jar"
+          fi
+          # Download Kotlin Stdlib
+          if [ ! -f "app/src/main/assets/sdk/kotlin-stdlib.jar" ]; then
+             curl -L "https://repo1.maven.org/maven2/org/jetbrains/kotlin/kotlin-stdlib/1.9.21/kotlin-stdlib-1.9.21.jar" -o "app/src/main/assets/sdk/kotlin-stdlib.jar"
+          fi
 
       - name: 🔨 Build Debug APK
         run: ./gradlew assembleDebug --stacktrace
