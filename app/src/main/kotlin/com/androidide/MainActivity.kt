@@ -8,9 +8,9 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.Settings
+import android.view.View
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.androidide.databinding.ActivityMainBinding
@@ -36,7 +36,6 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
         checkPermissions()
     }
 
@@ -52,11 +51,9 @@ class MainActivity : AppCompatActivity() {
                 Manifest.permission.READ_EXTERNAL_STORAGE,
                 Manifest.permission.WRITE_EXTERNAL_STORAGE
             )
-
             val notGranted = permissions.filter {
                 ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
             }
-
             if (notGranted.isEmpty()) {
                 proceedToApp()
             } else {
@@ -80,34 +77,30 @@ class MainActivity : AppCompatActivity() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == 100) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                if (Environment.isExternalStorageManager()) {
-                    proceedToApp()
-                } else {
-                    showPermissionDenied()
-                }
+        if (requestCode == 100 && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            if (Environment.isExternalStorageManager()) {
+                proceedToApp()
+            } else {
+                showPermissionDenied()
             }
         }
     }
 
     private fun proceedToApp() {
         lifecycleScope.launch {
-            binding.progressBar.visibility = android.view.View.VISIBLE
-            binding.textStatus.text = "Inicializando..."
-            
-            delay(1500)
-            
+            binding.progressBar.visibility = View.VISIBLE
+            binding.buttonRetry.visibility = View.GONE
+            binding.textStatus.text = "Carregando..."
+            delay(1000)
             startActivity(Intent(this@MainActivity, ProjectManagerActivity::class.java))
             finish()
         }
     }
 
     private fun showPermissionDenied() {
-        binding.textStatus.text = "Permissões necessárias não concedidas"
-        binding.buttonRetry.visibility = android.view.View.VISIBLE
-        binding.buttonRetry.setOnClickListener {
-            checkPermissions()
-        }
+        binding.progressBar.visibility = View.GONE
+        binding.textStatus.text = "Permissão necessária"
+        binding.buttonRetry.visibility = View.VISIBLE
+        binding.buttonRetry.setOnClickListener { checkPermissions() }
     }
 }

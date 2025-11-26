@@ -16,35 +16,22 @@ class ProjectAdapter(
 
     private val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
 
-    inner class ViewHolder(private val binding: ItemProjectBinding) :
-        RecyclerView.ViewHolder(binding.root) {
-
+    inner class ViewHolder(private val binding: ItemProjectBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(project: Project) {
-            binding.apply {
-                textProjectName.text = project.name
-                textPackageName.text = project.packageName
-                textLastModified.text = "Modificado: ${dateFormat.format(Date(project.lastModified))}"
-                textSdkVersion.text = "SDK: ${project.minSdk} - ${project.targetSdk}"
-
-                root.setOnClickListener { onProjectClick(project) }
-                root.setOnLongClickListener {
-                    onProjectLongClick(project)
-                    true
-                }
-            }
+            binding.textProjectName.text = project.name
+            binding.textPackageName.text = project.packageName
+            binding.textLastModified.text = dateFormat.format(Date(project.lastModified))
+            binding.textSdkVersion.text = "SDK: ${project.minSdk}-${project.targetSdk}"
+            binding.root.setOnClickListener { onProjectClick(project) }
+            binding.root.setOnLongClickListener { onProjectLongClick(project); true }
         }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val binding = ItemProjectBinding.inflate(
-            LayoutInflater.from(parent.context), parent, false
-        )
+        val binding = ItemProjectBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return ViewHolder(binding)
     }
 
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.bind(projects[position])
-    }
-
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) = holder.bind(projects[position])
     override fun getItemCount() = projects.size
 }

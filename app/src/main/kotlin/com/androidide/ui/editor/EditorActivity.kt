@@ -4,7 +4,6 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
-import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AlertDialog
@@ -28,7 +27,6 @@ class EditorActivity : AppCompatActivity() {
     private lateinit var binding: ActivityEditorBinding
     private lateinit var project: Project
     private lateinit var fileAdapter: FileAdapter
-    
     private var currentFile: SourceFile? = null
     private val openFiles = mutableListOf<SourceFile>()
 
@@ -38,7 +36,7 @@ class EditorActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         project = intent.getParcelableExtra("project")!!
-
+        
         setupToolbar()
         setupDrawer()
         setupEditor()
@@ -49,10 +47,7 @@ class EditorActivity : AppCompatActivity() {
 
     private fun setupToolbar() {
         setSupportActionBar(binding.toolbar)
-        supportActionBar?.apply {
-            title = project.name
-            setDisplayHomeAsUpEnabled(true)
-        }
+        supportActionBar?.title = project.name
     }
 
     private fun setupDrawer() {
@@ -68,15 +63,6 @@ class EditorActivity : AppCompatActivity() {
         binding.codeEditor.apply {
             setTextSize(14f)
             setTabWidth(4)
-            // Configurar syntax highlighting
-        }
-
-        binding.codeEditor.setOnTextChangedListener { _, _ ->
-            currentFile?.let {
-                it.content = binding.codeEditor.text.toString()
-                it.isModified = true
-                updateTabTitle()
-            }
         }
     }
 
@@ -85,25 +71,18 @@ class EditorActivity : AppCompatActivity() {
             openFile(file)
             binding.drawerLayout.closeDrawer(GravityCompat.START)
         }
-
-        binding.fileTreeRecyclerView.apply {
-            layoutManager = LinearLayoutManager(this@EditorActivity)
-            adapter = fileAdapter
-        }
+        binding.fileTreeRecyclerView.layoutManager = LinearLayoutManager(this)
+        binding.fileTreeRecyclerView.adapter = fileAdapter
     }
 
     private fun setupTabs() {
         binding.tabLayout.addOnTabSelectedListener(object : 
             com.google.android.material.tabs.TabLayout.OnTabSelectedListener {
-            
             override fun onTabSelected(tab: com.google.android.material.tabs.TabLayout.Tab?) {
-                tab?.position?.let { position ->
-                    if (position < openFiles.size) {
-                        switchToFile(openFiles[position])
-                    }
+                tab?.position?.let { pos ->
+                    if (pos < openFiles.size) switchToFile(openFiles[pos])
                 }
             }
-
             override fun onTabUnselected(tab: com.google.android.material.tabs.TabLayout.Tab?) {}
             override fun onTabReselected(tab: com.google.android.material.tabs.TabLayout.Tab?) {}
         })
@@ -112,92 +91,35 @@ class EditorActivity : AppCompatActivity() {
     private fun loadProjectFiles() {
         lifecycleScope.launch {
             val files = withContext(Dispatchers.IO) {
-                getFilesRecursively(project.srcDir)
+                project.srcDir.walkTopDown().filter { it.isFile }.toList()
             }
-            fileAdapter.setFiles(files)
+            fileAdapter.setFiles(files, project.srcDir)
         }
-    }
-
-    private fun getFilesRecursively(dir: File): List<File> {
-        val files = mutableListOf<File>()
-        dir.listFiles()?.sortedWith(compareBy({ !it.isDirectory }, { it.name }))?.forEach { file ->
-            files.add(file)
-            if (file.isDirectory) {
-                files.addAll(getFilesRecursively(file))
-            }
-        }
-        return files
     }
 
     private fun openFile(file: File) {
         if (file.isDirectory) return
-
-        // Verificar se já está aberto
-        val existingFile = openFiles.find { it.path == file.absolutePath }
-        if (existingFile != null) {
-            switchToFile(existingFile)
+        
+        val existing = openFiles.find { it.path == file.absolutePath }
+        if (existing != null) {
+            switchToFile(existing)
             return
         }
 
-        // Abrir novo arquivo
         lifecycleScope.launch {
-            val sourceFile = withContext(Dispatchers.IO) {
-                SourceFile.fromFile(file)
-            }
-
+            val sourceFile = withContext(Dispatchers.IO) { SourceFile.fromFile(file) }
             openFiles.add(sourceFile)
-            addTab(sourceFile)
+            binding.tabLayout.addTab(binding.tabLayout.newTab().setText(sourceFile.name))
             switchToFile(sourceFile)
         }
     }
 
-    private fun addTab(file: SourceFile) {
-        val tab = binding.tabLayout.newTab()
-        tab.text = file.name
-        binding.tabLayout.addTab(tab)
-        tab.select()
-    }
-
     private fun switchToFile(file: SourceFile) {
+        currentFile?.content = binding.codeEditor.text.toString()
         currentFile = file
         binding.codeEditor.setText(file.content)
-        
-        // Configurar highlighting baseado no tipo
-        setupSyntaxHighlighting(file.type)
-        
-        // Selecionar tab correspondente
         val index = openFiles.indexOf(file)
-        if (index >= 0 && index < binding.tabLayout.tabCount) {
-            binding.tabLayout.getTabAt(index)?.select()
-        }
-    }
-
-    private fun setupSyntaxHighlighting(type: SourceFile.FileType) {
-        // Configurar esquema de cores baseado no tipo de arquivo
-        when (type) {
-            SourceFile.FileType.KOTLIN -> {
-                // Configurar highlighting Kotlin
-            }
-            SourceFile.FileType.JAVA -> {
-                // Configurar highlighting Java
-            }
-            SourceFile.FileType.XML -> {
-                // Configurar highlighting XML
-            }
-            else -> {
-                // Texto simples
-            }
-        }
-    }
-
-    private fun updateTabTitle() {
-        currentFile?.let { file ->
-            val index = openFiles.indexOf(file)
-            if (index >= 0) {
-                val tab = binding.tabLayout.getTabAt(index)
-                tab?.text = if (file.isModified) "${file.name}*" else file.name
-            }
-        }
+        if (index >= 0) binding.tabLayout.getTabAt(index)?.select()
     }
 
     private fun saveCurrentFile() {
@@ -206,73 +128,12 @@ class EditorActivity : AppCompatActivity() {
             lifecycleScope.launch(Dispatchers.IO) {
                 val success = file.save()
                 withContext(Dispatchers.Main) {
-                    if (success) {
-                        Toast.makeText(this@EditorActivity, "Salvo!", Toast.LENGTH_SHORT).show()
-                        updateTabTitle()
-                    } else {
-                        Toast.makeText(this@EditorActivity, "Erro ao salvar", Toast.LENGTH_SHORT).show()
-                    }
+                    Toast.makeText(this@EditorActivity, 
+                        if (success) "Salvo!" else "Erro ao salvar", 
+                        Toast.LENGTH_SHORT).show()
                 }
             }
         }
-    }
-
-    private fun saveAllFiles() {
-        lifecycleScope.launch(Dispatchers.IO) {
-            openFiles.filter { it.isModified }.forEach { it.save() }
-            withContext(Dispatchers.Main) {
-                Toast.makeText(this@EditorActivity, "Todos os arquivos salvos!", Toast.LENGTH_SHORT).show()
-                openFiles.forEachIndexed { index, _ ->
-                    updateTabTitle()
-                }
-            }
-        }
-    }
-
-    private fun closeCurrentTab() {
-        currentFile?.let { file ->
-            if (file.isModified) {
-                AlertDialog.Builder(this)
-                    .setTitle("Salvar alterações?")
-                    .setMessage("O arquivo '${file.name}' foi modificado. Deseja salvar?")
-                    .setPositiveButton("Salvar") { _, _ ->
-                        file.save()
-                        removeTab(file)
-                    }
-                    .setNegativeButton("Não salvar") { _, _ ->
-                        removeTab(file)
-                    }
-                    .setNeutralButton("Cancelar", null)
-                    .show()
-            } else {
-                removeTab(file)
-            }
-        }
-    }
-
-    private fun removeTab(file: SourceFile) {
-        val index = openFiles.indexOf(file)
-        if (index >= 0) {
-            openFiles.removeAt(index)
-            binding.tabLayout.removeTabAt(index)
-            
-            if (openFiles.isNotEmpty()) {
-                val newIndex = (index - 1).coerceAtLeast(0)
-                switchToFile(openFiles[newIndex])
-            } else {
-                currentFile = null
-                binding.codeEditor.setText("")
-            }
-        }
-    }
-
-    private fun buildProject() {
-        // Salvar todos os arquivos antes de compilar
-        saveAllFiles()
-        
-        val intent = Intent(this, BuildActivity::class.java)
-        intent.putExtra("project", project)
-        startActivity(intent)
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -282,69 +143,20 @@ class EditorActivity : AppCompatActivity() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
-            R.id.action_save -> {
-                saveCurrentFile()
-                true
+            R.id.action_save -> { saveCurrentFile(); true }
+            R.id.action_build -> { 
+                startActivity(Intent(this, BuildActivity::class.java).putExtra("project", project))
+                true 
             }
-            R.id.action_save_all -> {
-                saveAllFiles()
-                true
-            }
-            R.id.action_build -> {
-                buildProject()
-                true
-            }
-            R.id.action_close_tab -> {
-                closeCurrentTab()
-                true
-            }
-            R.id.action_undo -> {
-                binding.codeEditor.undo()
-                true
-            }
-            R.id.action_redo -> {
-                binding.codeEditor.redo()
-                true
-            }
-            R.id.action_find -> {
-                showFindDialog()
-                true
-            }
+            R.id.action_undo -> { binding.codeEditor.undo(); true }
+            R.id.action_redo -> { binding.codeEditor.redo(); true }
             else -> super.onOptionsItemSelected(item)
         }
-    }
-
-    private fun showFindDialog() {
-        val editText = android.widget.EditText(this)
-        editText.hint = "Buscar..."
-
-        AlertDialog.Builder(this)
-            .setTitle("Buscar")
-            .setView(editText)
-            .setPositiveButton("Buscar") { _, _ ->
-                val query = editText.text.toString()
-                binding.codeEditor.searcher.search(query)
-            }
-            .setNegativeButton("Cancelar", null)
-            .show()
     }
 
     override fun onBackPressed() {
         if (binding.drawerLayout.isDrawerOpen(GravityCompat.START)) {
             binding.drawerLayout.closeDrawer(GravityCompat.START)
-        } else if (openFiles.any { it.isModified }) {
-            AlertDialog.Builder(this)
-                .setTitle("Arquivos não salvos")
-                .setMessage("Existem arquivos não salvos. Deseja salvar antes de sair?")
-                .setPositiveButton("Salvar e sair") { _, _ ->
-                    saveAllFiles()
-                    super.onBackPressed()
-                }
-                .setNegativeButton("Sair sem salvar") { _, _ ->
-                    super.onBackPressed()
-                }
-                .setNeutralButton("Cancelar", null)
-                .show()
         } else {
             super.onBackPressed()
         }

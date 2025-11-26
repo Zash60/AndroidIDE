@@ -1,6 +1,7 @@
 package com.androidide.ui.project
 
 import android.os.Bundle
+import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -17,10 +18,8 @@ class CreateProjectActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         setSupportActionBar(binding.toolbar)
-        supportActionBar?.apply {
-            setDisplayHomeAsUpEnabled(true)
-            title = "Novo Projeto"
-        }
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.title = "Novo Projeto"
 
         setupSpinners()
         setupListeners()
@@ -28,76 +27,43 @@ class CreateProjectActivity : AppCompatActivity() {
 
     private fun setupSpinners() {
         val sdkVersions = (21..34).map { "API $it" }.toTypedArray()
-        
-        val minSdkAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, sdkVersions)
-        binding.spinnerMinSdk.adapter = minSdkAdapter
-        binding.spinnerMinSdk.setSelection(3) // API 24
-
-        val targetSdkAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, sdkVersions)
-        binding.spinnerTargetSdk.adapter = targetSdkAdapter
-        binding.spinnerTargetSdk.setSelection(13) // API 34
+        binding.spinnerMinSdk.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, sdkVersions)
+        binding.spinnerMinSdk.setSelection(3)
+        binding.spinnerTargetSdk.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, sdkVersions)
+        binding.spinnerTargetSdk.setSelection(13)
     }
 
     private fun setupListeners() {
-        // Auto-gerar package name
-        binding.editProjectName.setOnFocusChangeListener { _, hasFocus ->
-            if (!hasFocus && binding.editPackageName.text.isNullOrEmpty()) {
-                val projectName = binding.editProjectName.text.toString()
-                    .lowercase()
-                    .replace(" ", "")
-                    .replace(Regex("[^a-z0-9]"), "")
-                binding.editPackageName.setText("com.example.$projectName")
-            }
-        }
-
-        binding.buttonCreate.setOnClickListener {
-            createProject()
-        }
-
-        binding.buttonCancel.setOnClickListener {
-            finish()
-        }
+        binding.buttonCreate.setOnClickListener { createProject() }
+        binding.buttonCancel.setOnClickListener { finish() }
     }
 
     private fun createProject() {
         val name = binding.editProjectName.text.toString().trim()
         val packageName = binding.editPackageName.text.toString().trim()
-        val minSdk = 21 + binding.spinnerMinSdk.selectedItemPosition
-        val targetSdk = 21 + binding.spinnerTargetSdk.selectedItemPosition
 
-        // Validações
         if (name.isEmpty()) {
-            binding.inputLayoutName.error = "Nome é obrigatório"
+            binding.inputLayoutName.error = "Nome obrigatório"
             return
         }
-
         if (packageName.isEmpty()) {
-            binding.inputLayoutPackage.error = "Package é obrigatório"
+            binding.inputLayoutPackage.error = "Package obrigatório"
             return
         }
 
-        if (!packageName.matches(Regex("^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$"))) {
-            binding.inputLayoutPackage.error = "Package inválido"
-            return
-        }
-
-        if (minSdk > targetSdk) {
-            Toast.makeText(this, "Min SDK não pode ser maior que Target SDK", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        // Criar projeto
+        binding.progressBar.visibility = View.VISIBLE
         binding.buttonCreate.isEnabled = false
-        binding.progressBar.visibility = android.view.View.VISIBLE
 
         try {
+            val minSdk = 21 + binding.spinnerMinSdk.selectedItemPosition
+            val targetSdk = 21 + binding.spinnerTargetSdk.selectedItemPosition
             ProjectManager.createProject(name, packageName, minSdk, targetSdk)
-            Toast.makeText(this, "Projeto criado com sucesso!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Projeto criado!", Toast.LENGTH_SHORT).show()
             finish()
         } catch (e: Exception) {
-            Toast.makeText(this, "Erro ao criar projeto: ${e.message}", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Erro: ${e.message}", Toast.LENGTH_LONG).show()
             binding.buttonCreate.isEnabled = true
-            binding.progressBar.visibility = android.view.View.GONE
+            binding.progressBar.visibility = View.GONE
         }
     }
 

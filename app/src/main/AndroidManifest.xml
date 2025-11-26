@@ -4,12 +4,7 @@
 
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" 
-        tools:ignore="ScopedStorage" />
-    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" tools:ignore="ScopedStorage" />
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
@@ -34,26 +29,11 @@
             </intent-filter>
         </activity>
 
-        <activity
-            android:name=".ui.project.ProjectManagerActivity"
-            android:exported="false" />
-
-        <activity
-            android:name=".ui.project.CreateProjectActivity"
-            android:exported="false" />
-
-        <activity
-            android:name=".ui.editor.EditorActivity"
-            android:exported="false"
-            android:windowSoftInputMode="adjustResize" />
-
-        <activity
-            android:name=".ui.build.BuildActivity"
-            android:exported="false" />
-
-        <activity
-            android:name=".ui.settings.SettingsActivity"
-            android:exported="false" />
+        <activity android:name=".ui.project.ProjectManagerActivity" />
+        <activity android:name=".ui.project.CreateProjectActivity" />
+        <activity android:name=".ui.editor.EditorActivity" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".ui.build.BuildActivity" />
+        <activity android:name=".ui.settings.SettingsActivity" />
 
         <provider
             android:name="androidx.core.content.FileProvider"
@@ -65,11 +45,5 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
-        <service
-            android:name=".compiler.BuildService"
-            android:foregroundServiceType="dataSync"
-            android:exported="false" />
-
     </application>
-
 </manifest>

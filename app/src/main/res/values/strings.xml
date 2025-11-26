@@ -1,17 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Android IDE</string>
-    <string name="drawer_open">Abrir menu</string>
-    <string name="drawer_close">Fechar menu</string>
-    
-    <!-- Actions -->
+    <string name="drawer_open">Abrir</string>
+    <string name="drawer_close">Fechar</string>
     <string name="action_save">Salvar</string>
     <string name="action_build">Compilar</string>
     <string name="action_settings">Configurações</string>
-    
-    <!-- Labels -->
-    <string name="project_name">Nome do Projeto</string>
-    <string name="package_name">Nome do Pacote</string>
-    <string name="create_project">Criar Projeto</string>
-    <string name="cancel">Cancelar</string>
+    <string name="action_refresh">Atualizar</string>
 </resources>

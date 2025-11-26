@@ -14,13 +14,7 @@ data class SourceFile(
 ) : Parcelable {
 
     enum class FileType {
-        KOTLIN,
-        JAVA,
-        XML,
-        GRADLE,
-        JSON,
-        TEXT,
-        UNKNOWN
+        KOTLIN, JAVA, XML, GRADLE, JSON, TEXT, UNKNOWN
     }
 
     companion object {
@@ -31,10 +25,8 @@ data class SourceFile(
                 "xml" -> FileType.XML
                 "gradle", "kts" -> FileType.GRADLE
                 "json" -> FileType.JSON
-                "txt", "md" -> FileType.TEXT
                 else -> FileType.UNKNOWN
             }
-
             return SourceFile(
                 path = file.absolutePath,
                 name = file.name,
