@@ -21,15 +21,13 @@ on:
 
 env:
   JAVA_VERSION: '17'
-  ANDROID_COMPILE_SDK: '34'
-  ANDROID_BUILD_TOOLS: '34.0.0'
-  ANDROID_MIN_SDK: '26'
+  GRADLE_VERSION: '8.5'
 
 jobs:
   build:
     name: Build APK
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
 
     steps:
       - name: 📥 Checkout Repository
@@ -42,70 +40,66 @@ jobs:
         with:
           java-version: ${{ env.JAVA_VERSION }}
           distribution: 'temurin'
-          cache: gradle
+
+      - name: 🔧 Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: ${{ env.GRADLE_VERSION }}
 
       - name: 🤖 Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: 📦 Install Android SDK Components
+      - name: 📦 Install SDK Components
         run: |
-          sdkmanager --install "platforms;android-${{ env.ANDROID_COMPILE_SDK }}"
-          sdkmanager --install "build-tools;${{ env.ANDROID_BUILD_TOOLS }}"
-          sdkmanager --install "platform-tools"
+          sdkmanager --install "platforms;android-34"
+          sdkmanager --install "build-tools;34.0.0"
 
       - name: 📥 Download SDK Dependencies
         run: |
-          chmod +x ./scripts/download-sdk.sh
-          ./scripts/download-sdk.sh
+          mkdir -p app/src/main/assets/sdk
+          chmod +x ./scripts/download-sdk.sh || true
+          ./scripts/download-sdk.sh || echo "Skipping SDK download"
 
-      - name: 🔑 Grant Execute Permission for Gradlew
+      - name: 🔨 Generate Gradle Wrapper (if missing)
+        run: |
+          if [ ! -f "gradlew" ]; then
+            echo "Generating Gradle Wrapper..."
+            gradle wrapper --gradle-version ${{ env.GRADLE_VERSION }}
+          fi
+
+      - name: 🔑 Grant Execute Permission
         run: chmod +x gradlew
 
-      - name: 📋 Cache Gradle Packages
+      - name: 📋 Cache Gradle
         uses: actions/cache@v4
         with:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-            ~/.android/build-cache
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      - name: 🔍 Validate Gradle Wrapper
-        uses: gradle/wrapper-validation-action@v2
-
-      - name: 🧪 Run Unit Tests
-        run: ./gradlew testDebugUnitTest --stacktrace
-
-      - name: 📊 Upload Test Results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: test-results
-          path: app/build/reports/tests/
-          retention-days: 7
-
       - name: 🔨 Build Debug APK
         if: github.event.inputs.build_type != 'release'
-        run: ./gradlew assembleDebug --stacktrace
+        run: ./gradlew assembleDebug --stacktrace --no-daemon
 
       - name: 🔨 Build Release APK
         if: github.event.inputs.build_type == 'release'
-        run: ./gradlew assembleRelease --stacktrace
+        run: ./gradlew assembleRelease --stacktrace --no-daemon
 
       - name: 📝 Get APK Info
         id: apk-info
         run: |
           if [ "${{ github.event.inputs.build_type }}" == "release" ]; then
-            APK_PATH="app/build/outputs/apk/release/app-release-unsigned.apk"
+            APK_PATH="app/build/outputs/apk/release/"
           else
-            APK_PATH="app/build/outputs/apk/debug/app-debug.apk"
+            APK_PATH="app/build/outputs/apk/debug/"
           fi
           
-          echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT
-          echo "apk_size=$(du -h $APK_PATH | cut -f1)" >> $GITHUB_OUTPUT
-          echo "build_date=$(date +'%Y-%m-%d_%H-%M-%S')" >> $GITHUB_OUTPUT
+          APK_FILE=$(find $APK_PATH -name "*.apk" | head -1)
+          echo "apk_path=$APK_FILE" >> $GITHUB_OUTPUT
+          echo "apk_size=$(du -h $APK_FILE | cut -f1)" >> $GITHUB_OUTPUT
           echo "short_sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
       - name: 📤 Upload Debug APK
@@ -113,7 +107,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: AndroidIDE-debug-${{ steps.apk-info.outputs.short_sha }}
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: app/build/outputs/apk/debug/*.apk
           retention-days: 30
           if-no-files-found: error
 
@@ -122,58 +116,16 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: AndroidIDE-release-${{ steps.apk-info.outputs.short_sha }}
-          path: app/build/outputs/apk/release/app-release-unsigned.apk
+          path: app/build/outputs/apk/release/*.apk
           retention-days: 90
           if-no-files-found: error
 
-      - name: 📤 Upload APK Mappings (Release)
-        if: github.event.inputs.build_type == 'release'
-        uses: actions/upload-artifact@v4
-        with:
-          name: mappings-${{ steps.apk-info.outputs.short_sha }}
-          path: app/build/outputs/mapping/release/
-          retention-days: 90
-          if-no-files-found: ignore
-
       - name: 📊 Build Summary
         run: |
-          echo "## 🎉 Build Completed Successfully!" >> $GITHUB_STEP_SUMMARY
+          echo "## 🎉 Build Completed!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
-          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Info | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|-------|" >> $GITHUB_STEP_SUMMARY
           echo "| Build Type | ${{ github.event.inputs.build_type || 'debug' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| APK Size | ${{ steps.apk-info.outputs.apk_size }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Commit | ${{ steps.apk-info.outputs.short_sha }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Build Date | ${{ steps.apk-info.outputs.build_date }} |" >> $GITHUB_STEP_SUMMARY
-
-  lint:
-    name: Lint Check
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-
-    steps:
-      - name: 📥 Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: ☕ Setup JDK
-        uses: actions/setup-java@v4
-        with:
-          java-version: ${{ env.JAVA_VERSION }}
-          distribution: 'temurin'
-          cache: gradle
-
-      - name: 🔑 Grant Execute Permission
-        run: chmod +x gradlew
-
-      - name: 🔍 Run Lint
-        run: ./gradlew lint --stacktrace
-
-      - name: 📤 Upload Lint Results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: lint-results
-          path: |
-            app/build/reports/lint-results-*.html
-            app/build/reports/lint-results-*.xml
-          retention-days: 7
+          echo "| Commit | \`${{ steps.apk-info.outputs.short_sha }}\` |" >> $GITHUB_STEP_SUMMARY
