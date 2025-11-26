@@ -22,6 +22,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
 
+    // Permissões normais (Android < 11)
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
@@ -29,6 +30,19 @@ class MainActivity : AppCompatActivity() {
             proceedToApp()
         } else {
             showPermissionDenied()
+        }
+    }
+
+    // Permissão de Gerenciamento de Todos os Arquivos (Android 11+)
+    private val manageStorageLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            if (Environment.isExternalStorageManager()) {
+                proceedToApp()
+            } else {
+                showPermissionDenied()
+            }
         }
     }
 
@@ -67,21 +81,10 @@ class MainActivity : AppCompatActivity() {
             try {
                 val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
                 intent.data = Uri.parse("package:$packageName")
-                startActivityForResult(intent, 100)
+                manageStorageLauncher.launch(intent)
             } catch (e: Exception) {
                 val intent = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
-                startActivityForResult(intent, 100)
-            }
-        }
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == 100 && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            if (Environment.isExternalStorageManager()) {
-                proceedToApp()
-            } else {
-                showPermissionDenied()
+                manageStorageLauncher.launch(intent)
             }
         }
     }
