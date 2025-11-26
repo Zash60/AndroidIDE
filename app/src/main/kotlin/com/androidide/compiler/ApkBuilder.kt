@@ -1,7 +1,6 @@
 package com.androidide.compiler
 
 import com.androidide.model.BuildResult
-import com.androidide.model.BuildError
 import com.androidide.project.Project
 import java.io.File
 import java.io.FileOutputStream
@@ -49,3 +48,15 @@ class ApkBuilder(private val project: Project) {
                             zos.closeEntry()
                         }
                     }
+                }
+            }
+            
+            BuildResult(success = true)
+        } catch (e: Exception) {
+            BuildResult(
+                success = false,
+                errors = listOf(com.androidide.model.BuildError("", 0, 0, "Erro APK: ${e.message}"))
+            )
+        }
+    }
+}
