@@ -20,18 +20,27 @@ android {
     packaging {
         resources {
             excludes += listOf(
-                "META-INF/DEPENDENCIES", "META-INF/LICENSE", "META-INF/LICENSE.txt",
-                "META-INF/license.txt", "META-INF/NOTICE", "META-INF/NOTICE.txt",
-                "META-INF/notice.txt", "META-INF/ASL2.0", "META-INF/*.kotlin_module",
-                "**/*.kotlin_metadata", "META-INF/services/javax.annotation.processing.Processor"
+                "META-INF/DEPENDENCIES",
+                "META-INF/LICENSE",
+                "META-INF/LICENSE.txt",
+                "META-INF/license.txt",
+                "META-INF/NOTICE",
+                "META-INF/NOTICE.txt",
+                "META-INF/notice.txt",
+                "META-INF/ASL2.0",
+                "META-INF/AL2.0",
+                "META-INF/LGPL2.1",
+                "META-INF/*.kotlin_module",
+                "**/*.kotlin_metadata",
+                "META-INF/services/javax.annotation.processing.Processor",
+                "META-INF/versions/9/module-info.class",
+                "module-info.class"
             )
         }
     }
 
     compileOptions {
-        // ✅ ATIVA O DESUGARING (Correção do erro)
         isCoreLibraryDesugaringEnabled = true
-        
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -46,7 +55,6 @@ android {
 }
 
 dependencies {
-    // ✅ BIBLIOTECA DO DESUGAR (Necessária quando isCoreLibraryDesugaringEnabled = true)
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 
     // Android X
