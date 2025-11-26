@@ -14,7 +14,6 @@ class ProjectCompiler(
     private val onProgress: (BuildStep, String) -> Unit
 ) {
 
-    // Resolve ambiguidade convertendo para String explicitamente
     private val buildDirPath: String = project.buildDir.absolutePath
     private val classesDir = File(buildDirPath, "classes")
     private val dexDir = File(buildDirPath, "dex")
@@ -93,14 +92,16 @@ class ProjectCompiler(
         // Compila Kotlin
         if (kotlinFiles.isNotEmpty()) {
             val kResult = KotlinCompiler().compile(kotlinFiles, classesDir, classpath)
-            if (!kResult.success) return kResult
+            // ✅ CORRIGIDO: return@withContext
+            if (!kResult.success) return@withContext kResult
         }
 
         // Compila Java
         if (javaFiles.isNotEmpty()) {
             val javaClasspath = classpath + classesDir
             val jResult = JavaCompiler().compile(javaFiles, classesDir, javaClasspath)
-            if (!jResult.success) return jResult
+            // ✅ CORRIGIDO: return@withContext
+            if (!jResult.success) return@withContext jResult
         }
 
         BuildResult(success = true)
