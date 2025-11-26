@@ -29,6 +29,9 @@ android {
     }
 
     compileOptions {
+        // ✅ ATIVA O DESUGARING (Correção do erro)
+        isCoreLibraryDesugaringEnabled = true
+        
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -43,6 +46,9 @@ android {
 }
 
 dependencies {
+    // ✅ BIBLIOTECA DO DESUGAR (Necessária quando isCoreLibraryDesugaringEnabled = true)
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
+
     // Android X
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.appcompat:appcompat:1.6.1")
@@ -55,11 +61,9 @@ dependencies {
     implementation("io.github.Rosemoe.sora-editor:editor:0.23.2")
     implementation("io.github.Rosemoe.sora-editor:language-textmate:0.23.2")
 
-    // Compilers & Tools (As dependências que faltavam)
+    // Compilers & Tools
     implementation("com.android.tools:r8:8.2.42")
     implementation("com.android.tools.build:apksig:8.2.0")
-    // Usamos compileOnly para o compilador Kotlin para não inflar demais o APK, 
-    // mas se for rodar no device, precisa ser implementation
     implementation("org.jetbrains.kotlin:kotlin-compiler-embeddable:1.9.21")
     implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.21")
 
