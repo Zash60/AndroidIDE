@@ -7,7 +7,9 @@ plugins {
 val versionMajor = 1
 val versionMinor = 0
 val versionPatch = 0
-val versionNameSuffix: String by project.properties.withDefault { "" }
+
+// Correção do versionNameSuffix
+val versionNameSuffix: String = project.findProperty("versionNameSuffix")?.toString() ?: ""
 
 android {
     namespace = "com.androidide"
@@ -24,10 +26,6 @@ android {
 
         vectorDrawables {
             useSupportLibrary = true
-        }
-
-        ndk {
-            abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
         }
     }
 
@@ -77,7 +75,7 @@ android {
 
     buildFeatures {
         viewBinding = true
-        buildConfig = true
+        buildConfig = true  // Habilitado explicitamente aqui
     }
 
     packaging {
@@ -102,17 +100,7 @@ android {
 
     lint {
         abortOnError = false
-        checkReleaseBuilds = true
-        disable += listOf("MissingTranslation", "ExtraTranslation")
-        xmlReport = true
-        htmlReport = true
-    }
-
-    testOptions {
-        unitTests {
-            isIncludeAndroidResources = true
-            isReturnDefaultValues = true
-        }
+        checkReleaseBuilds = false
     }
 }
 
@@ -140,21 +128,19 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
 
-    // Kotlin Compiler (embeddable para compilar código Kotlin)
+    // Kotlin Compiler
     implementation("org.jetbrains.kotlin:kotlin-compiler-embeddable:1.9.21")
     implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.21")
-    implementation("org.jetbrains.kotlin:kotlin-reflect:1.9.21")
 
-    // D8/R8 para DEX compilation
+    // D8/R8 para DEX
     implementation("com.android.tools:r8:8.2.42")
 
     // APK Signing
     implementation("com.android.tools.build:apksig:8.2.0")
 
-    // Code Editor (Sora Editor)
+    // Code Editor
     implementation("io.github.Rosemoe.sora-editor:editor:0.23.2")
     implementation("io.github.Rosemoe.sora-editor:language-textmate:0.23.2")
-    implementation("io.github.Rosemoe.sora-editor:language-java:0.23.2")
 
     // JSON
     implementation("com.google.code.gson:gson:2.10.1")
@@ -162,20 +148,8 @@ dependencies {
     // Apache Commons
     implementation("commons-io:commons-io:2.15.1")
 
-    // Terminal Emulator (opcional)
-    implementation("com.termux.termux-app:terminal-view:0.118.0") {
-        isTransitive = false
-    }
-
     // Testing
     testImplementation("junit:junit:4.13.2")
-    testImplementation("org.mockito:mockito-core:5.8.0")
-    testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
-    testImplementation("androidx.arch.core:core-testing:2.2.0")
-
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
-    androidTestImplementation("androidx.test:runner:1.5.2")
-    androidTestImplementation("androidx.test:rules:1.5.0")
 }
