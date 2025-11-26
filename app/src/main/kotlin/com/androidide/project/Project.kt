@@ -18,11 +18,14 @@ data class Project(
     var lastModified: Long = System.currentTimeMillis()
 ) : Parcelable {
 
+    // Propriedades auxiliares necessárias para o compilador
     val projectDir: File get() = File(path)
+    val buildDir: File get() = File(projectDir, "build")
     val srcDir: File get() = File(projectDir, "app/src/main")
-    val kotlinDir: File get() = File(srcDir, "kotlin")
     val resDir: File get() = File(srcDir, "res")
     val manifestFile: File get() = File(srcDir, "AndroidManifest.xml")
+    
+    // Estrutura de pacotes
     val packagePath: String get() = packageName.replace(".", "/")
 
     companion object {
@@ -42,6 +45,7 @@ data class Project(
 
     fun save() {
         lastModified = System.currentTimeMillis()
-        File(projectDir, "project.json").writeText(Gson().toJson(this))
+        if (!projectDir.exists()) projectDir.mkdirs()
+        File(projectDir, CONFIG_FILE).writeText(Gson().toJson(this))
     }
 }
