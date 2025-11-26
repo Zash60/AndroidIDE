@@ -1,5 +1,6 @@
 package com.androidide.ui.build
 
+import android.os.Build
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.androidide.databinding.ActivityBuildBinding
@@ -15,12 +16,22 @@ class BuildActivity : AppCompatActivity() {
         binding = ActivityBuildBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        project = intent.getParcelableExtra("project")!!
+        // Recuperação do objeto Project com compatibilidade para Android 13 (Tiramisu)
+        project = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            intent.getParcelableExtra("project", Project::class.java)!!
+        } else {
+            @Suppress("DEPRECATION")
+            intent.getParcelableExtra("project")!!
+        }
         
         setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.title = "Build: ${project.name}"
 
+        setupView()
+    }
+
+    private fun setupView() {
         binding.textStatus.text = "Build não implementado ainda"
         binding.textLogs.text = """
             Android IDE - Build System
@@ -42,7 +53,8 @@ class BuildActivity : AppCompatActivity() {
     }
 
     override fun onSupportNavigateUp(): Boolean {
-        onBackPressed()
+        // Substitui o onBackPressed() depreciado
+        finish()
         return true
     }
 }
