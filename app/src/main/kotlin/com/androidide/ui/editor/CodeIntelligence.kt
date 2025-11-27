@@ -5,14 +5,14 @@ import io.github.rosemoe.sora.lang.Language
 import io.github.rosemoe.sora.lang.analysis.AnalyzeManager
 import io.github.rosemoe.sora.lang.completion.CompletionPublisher
 import io.github.rosemoe.sora.lang.completion.SimpleCompletionItem
-import io.github.rosemoe.sora.lang.completion.SymbolPairMatch
 import io.github.rosemoe.sora.lang.format.Formatter
 import io.github.rosemoe.sora.lang.smartEnter.NewlineHandler
-import io.github.rosemoe.sora.lang.styling.StylesReceiver
+import io.github.rosemoe.sora.lang.styling.StyleReceiver
 import io.github.rosemoe.sora.text.CharPosition
 import io.github.rosemoe.sora.text.Content
 import io.github.rosemoe.sora.text.ContentReference
 import io.github.rosemoe.sora.text.TextRange
+import io.github.rosemoe.sora.widget.SymbolPairMatch
 
 class BasicLanguage : Language {
 
@@ -25,7 +25,7 @@ class BasicLanguage : Language {
 
     override fun getAnalyzeManager(): AnalyzeManager {
         return object : AnalyzeManager {
-            override fun setReceiver(receiver: StylesReceiver?) {
+            override fun setReceiver(receiver: StyleReceiver?) {
                 // Não usado para linguagem básica
             }
 
@@ -59,14 +59,26 @@ class BasicLanguage : Language {
 
     override fun getFormatter(): Formatter {
         return object : Formatter {
-            override fun formatRegion(text: Content, from: TextRange, to: TextRange) {
+            override fun format(text: Content, cursorRange: TextRange) {
                 // Formatação básica (nenhuma)
+            }
+
+            override fun formatRegion(text: Content, rangeToFormat: TextRange, cursorRange: TextRange) {
+                // Formatação básica (nenhuma)
+            }
+
+            override fun setReceiver(receiver: Formatter.FormatResultReceiver?) {
+            }
+
+            override fun isRunning(): Boolean = false
+
+            override fun destroy() {
             }
         }
     }
 
     override fun getSymbolPairs(): SymbolPairMatch {
-        return SymbolPairMatch.DefaultSymbolPairs
+        return SymbolPairMatch.DefaultSymbolPairs()
     }
 
     override fun requireAutoComplete(
@@ -81,4 +93,7 @@ class BasicLanguage : Language {
     }
 
     override fun getNewlineHandlers(): Array<NewlineHandler>? = null
+
+    override fun destroy() {
+    }
 }
