@@ -66,9 +66,9 @@ dependencies {
 
     // --- EDITOR DEPENDENCIES (Versão atualizada) ---
     // Se o Maven Central falhar, o JitPack (configurado no settings.gradle.kts) resolverá.
-    implementation("io.github.rosemoe.sora-editor:editor:0.23.3")
-    implementation("io.github.rosemoe.sora-editor:language-textmate:0.23.3")
-    implementation("io.github.rosemoe.sora-editor:language-java:0.23.3")
+    implementation("io.github.Rosemoe.sora-editor:editor:0.23.3")
+implementation("io.github.Rosemoe.sora-editor:language-textmate:0.23.3")
+implementation("io.github.Rosemoe.sora-editor:language-java:0.23.3")
 
     // Git Integration
     implementation("org.eclipse.jgit:org.eclipse.jgit:6.8.0.202311291450-r")
