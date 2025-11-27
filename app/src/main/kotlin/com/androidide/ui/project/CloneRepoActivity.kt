@@ -37,12 +37,9 @@ class CloneRepoActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
             if (name.isEmpty()) {
-                binding.inputName.error = "Nome do projeto obrigatório"
+                binding.inputName.error = "Nome obrigatório"
                 return@setOnClickListener
             }
-
-            binding.inputUrl.error = null
-            binding.inputName.error = null
 
             startCloneProcess(url, name)
         }
@@ -51,7 +48,7 @@ class CloneRepoActivity : AppCompatActivity() {
     private fun startCloneProcess(url: String, name: String) {
         binding.progressBar.visibility = View.VISIBLE
         binding.btnClone.isEnabled = false
-        binding.textStatus.text = "Clonando repositório..."
+        binding.textStatus.text = "Clonando..."
         binding.textStatus.visibility = View.VISIBLE
 
         lifecycleScope.launch(Dispatchers.IO) {
@@ -60,7 +57,7 @@ class CloneRepoActivity : AppCompatActivity() {
                 
                 if (destDir.exists()) {
                     withContext(Dispatchers.Main) {
-                        binding.inputName.error = "Projeto já existe"
+                        binding.textStatus.text = "Erro: Pasta já existe."
                         binding.progressBar.visibility = View.GONE
                         binding.btnClone.isEnabled = true
                     }
@@ -70,8 +67,8 @@ class CloneRepoActivity : AppCompatActivity() {
                 val success = GitManager.cloneRepository(url, destDir)
 
                 if (success) {
-                    // Busca recursiva pelo manifesto para pegar o pacote correto
-                    val packageName = findPackageNameRecursively(destDir) ?: "com.imported.project"
+                    // Tenta encontrar o nome do pacote real
+                    val packageName = findPackageName(destDir) ?: "com.imported.project"
                     
                     val newProject = Project(
                         name = name,
@@ -88,10 +85,10 @@ class CloneRepoActivity : AppCompatActivity() {
                     binding.btnClone.isEnabled = true
                     
                     if (success) {
-                        Toast.makeText(this@CloneRepoActivity, "Concluído!", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@CloneRepoActivity, "Sucesso!", Toast.LENGTH_SHORT).show()
                         finish()
                     } else {
-                        binding.textStatus.text = "Falha ao clonar."
+                        binding.textStatus.text = "Falha no Clone."
                     }
                 }
             } catch (e: Exception) {
@@ -99,25 +96,35 @@ class CloneRepoActivity : AppCompatActivity() {
                     binding.progressBar.visibility = View.GONE
                     binding.btnClone.isEnabled = true
                     binding.textStatus.text = "Erro: ${e.message}"
-                    e.printStackTrace()
                 }
             }
         }
     }
 
-    private fun findPackageNameRecursively(dir: File): String? {
-        // Limite de profundidade para não demorar demais
-        return dir.walkTopDown()
-            .maxDepth(4) 
+    private fun findPackageName(projectDir: File): String? {
+        // 1. Tenta o caminho padrão do Android Studio
+        val standardManifest = File(projectDir, "app/src/main/AndroidManifest.xml")
+        val pkg = parseManifest(standardManifest)
+        if (pkg != null) return pkg
+
+        // 2. Tenta na raiz
+        val rootManifest = File(projectDir, "AndroidManifest.xml")
+        val rootPkg = parseManifest(rootManifest)
+        if (rootPkg != null) return rootPkg
+
+        // 3. Busca recursiva (último recurso)
+        return projectDir.walkTopDown()
+            .maxDepth(5)
             .filter { it.name == "AndroidManifest.xml" }
-            .mapNotNull { parseManifestPackage(it) }
+            .mapNotNull { parseManifest(it) }
             .firstOrNull()
     }
 
-    private fun parseManifestPackage(manifestFile: File): String? {
+    private fun parseManifest(file: File): String? {
+        if (!file.exists()) return null
         return try {
-            val content = manifestFile.readText()
-            // Regex simples para capturar package="com.exemplo"
+            val content = file.readText()
+            // Regex flexível para capturar package="xyz" ou package = "xyz"
             val pattern = Pattern.compile("package\\s*=\\s*\"([^\"]+)\"")
             val matcher = pattern.matcher(content)
             if (matcher.find()) {
