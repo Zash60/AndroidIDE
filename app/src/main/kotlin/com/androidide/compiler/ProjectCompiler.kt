@@ -239,18 +239,16 @@ class ProjectCompiler(
 
             try {
                 val signer = ApkSigner()
-                // Assumindo que o builder gerou o nome padrão "-unsigned.apk"
                 signer.sign(unsignedApk, finalApk)
             } catch (e: Exception) {
                 // Se falhar assinatura (ex: falta keystore), copia o não assinado como fallback
                 unsignedApk.copyTo(finalApk, overwrite = true)
-                // Não lançamos erro fatal aqui para permitir teste em emuladores permissivos,
-                // mas em devices reais a instalação falhará.
             }
 
             onProgress(BuildStep.DONE, "Build Concluído!")
             
-            return BuildResult(
+            // CORREÇÃO: "return" removido aqui. Esta é a última expressão do bloco "try"
+            BuildResult(
                 success = true,
                 apkPath = finalApk.absolutePath,
                 duration = System.currentTimeMillis() - startTime
@@ -259,7 +257,9 @@ class ProjectCompiler(
         } catch (e: Exception) {
             e.printStackTrace()
             errors.add(BuildError(message = e.message ?: "Erro desconhecido durante o build"))
-            return BuildResult(success = false, errors = errors)
+            
+            // CORREÇÃO: "return" removido aqui. Esta é a última expressão do bloco "catch"
+            BuildResult(success = false, errors = errors)
         }
     }
 
@@ -305,7 +305,6 @@ class ProjectCompiler(
         if (!success) {
             println("ECJ Erro:\n$errWriter")
             println("ECJ Log:\n$outWriter")
-            // Poderia parsear os erros aqui para o objeto BuildError
         }
 
         return success
