@@ -60,7 +60,6 @@ class EditorActivity : AppCompatActivity() {
         setupTabs()
         loadProjectFiles()
 
-        // Botão flutuante para criar arquivos
         binding.fabAddFile.setOnClickListener {
             showCreateFileDialog()
         }
@@ -90,8 +89,6 @@ class EditorActivity : AppCompatActivity() {
         binding.codeEditor.apply {
             setTextSize(14f)
             setTabWidth(4)
-            // Configura linguagem Java/Kotlin para auto-complete e realce
-            setEditorLanguage(JavaLanguage()) 
         }
     }
 
@@ -182,13 +179,18 @@ class EditorActivity : AppCompatActivity() {
     }
 
     private fun switchToFile(file: SourceFile) {
-        // Salva estado anterior
         currentFile?.content = binding.codeEditor.text.toString()
-        
         currentFile = file
         binding.codeEditor.setText(file.content)
         
-        // Sincroniza abas se necessário
+        // Define a linguagem do editor
+        if (file.path.endsWith(".java")) {
+            binding.codeEditor.setEditorLanguage(JavaLanguage())
+        } else {
+            // Usa nossa linguagem básica (Auto-complete simples) para outros arquivos
+            binding.codeEditor.setEditorLanguage(BasicLanguage())
+        }
+
         val index = openFiles.indexOf(file)
         if (index >= 0 && binding.tabLayout.selectedTabPosition != index) {
             binding.tabLayout.getTabAt(index)?.select()
@@ -214,7 +216,6 @@ class EditorActivity : AppCompatActivity() {
     }
 
     private fun createNewFile(name: String, isFolder: Boolean) {
-        // Por padrão cria na raiz do srcDir, mas idealmente usaria o diretório selecionado na árvore
         val parentDir = project.srcDir 
         val newFile = File(parentDir, name)
 
@@ -240,32 +241,16 @@ class EditorActivity : AppCompatActivity() {
         }
     }
 
-    private fun saveCurrentFile() {
-        val fileToSave = currentFile
-        if (fileToSave != null) {
-            fileToSave.content = binding.codeEditor.text.toString()
-            lifecycleScope.launch(Dispatchers.IO) {
-                val success = fileToSave.save()
-                withContext(Dispatchers.Main) {
-                    val msg = if (success) "Salvo!" else "Erro ao salvar"
-                    Toast.makeText(this@EditorActivity, msg, Toast.LENGTH_SHORT).show()
-                }
-            }
-        }
-    }
-
     private fun showGitDialog() {
-         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_git_clone, null)
-         // Implementação simplificada de Git Pull para este exemplo
          AlertDialog.Builder(this)
             .setTitle("Git Pull")
-            .setMessage("Atualizar projeto do repositório remoto?")
+            .setMessage("Atualizar projeto?")
             .setPositiveButton("Pull") { _, _ ->
                 lifecycleScope.launch(Dispatchers.IO) {
                     val success = GitManager.pull(project.projectDir)
                     withContext(Dispatchers.Main) {
                         Toast.makeText(this@EditorActivity, 
-                            if(success) "Pull realizado!" else "Erro no Pull", 
+                            if(success) "Pull OK!" else "Erro no Pull", 
                             Toast.LENGTH_SHORT).show()
                         loadProjectFiles()
                     }
@@ -274,18 +259,31 @@ class EditorActivity : AppCompatActivity() {
             .show()
     }
 
+    private fun saveCurrentFile() {
+        val fileToSave = currentFile
+        if (fileToSave != null) {
+            fileToSave.content = binding.codeEditor.text.toString()
+            lifecycleScope.launch(Dispatchers.IO) {
+                fileToSave.save()
+            }
+        }
+    }
+
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.menu_editor, menu)
-        // Adiciona opção de Git dinamicamente ou via XML
         menu.add(0, 101, 0, "Git Pull")
         return true
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
-            R.id.action_save -> { saveCurrentFile(); true }
+            R.id.action_save -> {
+                saveCurrentFile()
+                Toast.makeText(this, "Salvo", Toast.LENGTH_SHORT).show()
+                true
+            }
             R.id.action_build -> { 
-                saveCurrentFile() // Salva antes de compilar
+                saveCurrentFile()
                 val intent = Intent(this, BuildActivity::class.java)
                 intent.putExtra("project", project)
                 startActivity(intent)
@@ -299,7 +297,7 @@ class EditorActivity : AppCompatActivity() {
                 if (binding.codeEditor.canRedo()) binding.codeEditor.redo()
                 true
             }
-            101 -> { // Git Pull ID
+            101 -> { // Git Pull
                 showGitDialog()
                 true
             }
