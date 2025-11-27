@@ -65,10 +65,10 @@ dependencies {
     implementation("androidx.drawerlayout:drawerlayout:1.2.0")
 
     // --- EDITOR DEPENDENCIES (VERSÃO FUNCIONAL ATUAL - 0.23.0) ---
-implementation("io.github.rosemoe.sora-editor:editor:0.23.0")
-implementation("io.github.rosemoe.sora-editor:language-textmate:0.23.0")
-implementation("io.github.rosemoe.sora-editor:language-java:0.23.0")
-implementation("io.github.rosemoe.sora-editor:language-tree-sitter:0.23.0") // opcional, mas recomendado
+implementation("io.github.Rosemoe.sora-editor:editor:0.23.0")
+implementation("io.github.Rosemoe.sora-editor:language-textmate:0.23.0")
+implementation("io.github.Rosemoe.sora-editor:language-java:0.23.0")
+implementation("io.github.Rosemoe.sora-editor:language-tree-sitter:0.23.0") // opcional, mas recomendado
 
     // Git Integration
     implementation("org.eclipse.jgit:org.eclipse.jgit:6.8.0.202311291450-r")
