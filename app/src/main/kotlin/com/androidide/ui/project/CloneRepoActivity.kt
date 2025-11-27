@@ -41,7 +41,6 @@ class CloneRepoActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            // Limpa erros anteriores
             binding.inputUrl.error = null
             binding.inputName.error = null
 
@@ -52,42 +51,36 @@ class CloneRepoActivity : AppCompatActivity() {
     private fun startCloneProcess(url: String, name: String) {
         binding.progressBar.visibility = View.VISIBLE
         binding.btnClone.isEnabled = false
-        binding.textStatus.text = "Clonando repositório... Isso pode demorar."
+        binding.textStatus.text = "Clonando repositório..."
         binding.textStatus.visibility = View.VISIBLE
 
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                // Define o diretório de destino na pasta de projetos do App
                 val destDir = File(App.projectsDir, name)
                 
                 if (destDir.exists()) {
                     withContext(Dispatchers.Main) {
-                        binding.inputName.error = "Já existe um projeto com este nome"
+                        binding.inputName.error = "Projeto já existe"
                         binding.progressBar.visibility = View.GONE
                         binding.btnClone.isEnabled = true
                     }
                     return@launch
                 }
 
-                // Usa o GitManager existente para clonar
                 val success = GitManager.cloneRepository(url, destDir)
 
                 if (success) {
-                    // --- CORREÇÃO: CRIAR O METADATA DO PROJETO (project.json) ---
-                    // Tenta adivinhar o package name lendo o AndroidManifest, se existir
-                    val packageName = findPackageName(destDir) ?: "com.imported.project"
+                    // Busca recursiva pelo manifesto para pegar o pacote correto
+                    val packageName = findPackageNameRecursively(destDir) ?: "com.imported.project"
                     
                     val newProject = Project(
                         name = name,
                         packageName = packageName,
                         path = destDir.absolutePath,
-                        minSdk = 21,  // Padrão seguro
+                        minSdk = 26,
                         targetSdk = 34
                     )
-                    
-                    // Salva o arquivo project.json para que o ProjectManager reconheça a pasta
                     newProject.save()
-                    // -----------------------------------------------------------
                 }
 
                 withContext(Dispatchers.Main) {
@@ -95,10 +88,10 @@ class CloneRepoActivity : AppCompatActivity() {
                     binding.btnClone.isEnabled = true
                     
                     if (success) {
-                        Toast.makeText(this@CloneRepoActivity, "Clonagem concluída!", Toast.LENGTH_LONG).show()
-                        finish() // Volta para a tela anterior
+                        Toast.makeText(this@CloneRepoActivity, "Concluído!", Toast.LENGTH_SHORT).show()
+                        finish()
                     } else {
-                        binding.textStatus.text = "Falha ao clonar. Verifique a URL ou sua conexão."
+                        binding.textStatus.text = "Falha ao clonar."
                     }
                 }
             } catch (e: Exception) {
@@ -112,28 +105,27 @@ class CloneRepoActivity : AppCompatActivity() {
         }
     }
 
-    // Função auxiliar para tentar ler o package do AndroidManifest.xml clonado
-    private fun findPackageName(projectDir: File): String? {
-        try {
-            // Tenta achar em app/src/main/AndroidManifest.xml (estrutura padrão)
-            var manifest = File(projectDir, "app/src/main/AndroidManifest.xml")
-            if (!manifest.exists()) {
-                // Tenta na raiz
-                manifest = File(projectDir, "AndroidManifest.xml")
-            }
+    private fun findPackageNameRecursively(dir: File): String? {
+        // Limite de profundidade para não demorar demais
+        return dir.walkTopDown()
+            .maxDepth(4) 
+            .filter { it.name == "AndroidManifest.xml" }
+            .mapNotNull { parseManifestPackage(it) }
+            .firstOrNull()
+    }
 
-            if (manifest.exists()) {
-                val content = manifest.readText()
-                val pattern = Pattern.compile("package=\"([^\"]+)\"")
-                val matcher = pattern.matcher(content)
-                if (matcher.find()) {
-                    return matcher.group(1)
-                }
-            }
+    private fun parseManifestPackage(manifestFile: File): String? {
+        return try {
+            val content = manifestFile.readText()
+            // Regex simples para capturar package="com.exemplo"
+            val pattern = Pattern.compile("package\\s*=\\s*\"([^\"]+)\"")
+            val matcher = pattern.matcher(content)
+            if (matcher.find()) {
+                matcher.group(1)
+            } else null
         } catch (e: Exception) {
-            e.printStackTrace()
+            null
         }
-        return null
     }
 
     override fun onSupportNavigateUp(): Boolean {
