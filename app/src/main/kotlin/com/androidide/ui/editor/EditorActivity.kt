@@ -55,7 +55,7 @@ class EditorActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        // Aplica as configurações sempre que a Activity for retomada (ex: voltar da tela de Settings)
+        // Aplica as configurações sempre que a Activity for retomada
         applySettings()
     }
 
@@ -88,7 +88,8 @@ class EditorActivity : AppCompatActivity() {
         val showLines = PreferenceManager.isLineNumbersEnabled(this)
         val wordWrap = PreferenceManager.isWordWrapEnabled(this)
 
-        binding.codeEditor.textSize = fontSize
+        // CORREÇÃO: Usando métodos setters diretos para evitar erro "Unresolved reference"
+        binding.codeEditor.setTextSize(fontSize)
         binding.codeEditor.isLineNumberEnabled = showLines
         binding.codeEditor.isWordwrap = wordWrap
     }
@@ -96,7 +97,6 @@ class EditorActivity : AppCompatActivity() {
     private fun setupFileTree() {
         fileAdapter = FileAdapter { file ->
             openFile(file)
-            // Fecha a gaveta após selecionar um arquivo (opcional, remova se preferir manter aberta)
             // binding.drawerLayout.closeDrawer(GravityCompat.START) 
         }
         binding.fileTreeRecyclerView.layoutManager = LinearLayoutManager(this)
@@ -119,12 +119,9 @@ class EditorActivity : AppCompatActivity() {
 
     private fun loadProjectFiles() {
         lifecycleScope.launch {
-            // Lista arquivos em background
             val files = withContext(Dispatchers.IO) {
-                // Pega todos os arquivos recursivamente
                 project.srcDir.walkTopDown().toList()
             }
-            // Atualiza UI na thread principal
             fileAdapter.setFiles(files, project.srcDir)
         }
     }
@@ -132,48 +129,37 @@ class EditorActivity : AppCompatActivity() {
     private fun openFile(file: File) {
         if (file.isDirectory) return
         
-        // Verifica se já está aberto
         val existing = openFiles.find { it.path == file.absolutePath }
         if (existing != null) {
             switchToFile(existing)
             return
         }
 
-        // Carrega e abre novo arquivo
         lifecycleScope.launch {
             val sourceFile = withContext(Dispatchers.IO) { SourceFile.fromFile(file) }
             openFiles.add(sourceFile)
             
-            // Adiciona a aba
             val tab = binding.tabLayout.newTab().setText(sourceFile.name)
             binding.tabLayout.addTab(tab)
-            
-            // Seleciona a aba recém criada (isso aciona o listener que chama switchToFile)
             tab.select()
         }
     }
 
     private fun switchToFile(file: SourceFile) {
-        // Salva o estado do arquivo anterior na memória antes de trocar
         currentFile?.content = binding.codeEditor.text.toString()
         
         currentFile = file
         binding.codeEditor.setText(file.content)
         
-        // Sincroniza a aba selecionada se a troca não veio do clique na aba
         val index = openFiles.indexOf(file)
         if (index >= 0 && binding.tabLayout.selectedTabPosition != index) {
             binding.tabLayout.getTabAt(index)?.select()
         }
-        
-        // Aqui você poderia adicionar lógica para mudar a linguagem do editor (Syntax Highlight)
-        // baseada na extensão do arquivo (file.type)
     }
 
     private fun saveCurrentFile() {
         val fileToSave = currentFile
         if (fileToSave != null) {
-            // Atualiza conteúdo na memória
             fileToSave.content = binding.codeEditor.text.toString()
             
             lifecycleScope.launch(Dispatchers.IO) {
@@ -200,7 +186,6 @@ class EditorActivity : AppCompatActivity() {
                 true
             }
             R.id.action_build -> { 
-                // Inicia a Activity de Build passando o projeto
                 val intent = Intent(this, BuildActivity::class.java)
                 intent.putExtra("project", project)
                 startActivity(intent)
@@ -222,7 +207,6 @@ class EditorActivity : AppCompatActivity() {
         if (binding.drawerLayout.isDrawerOpen(GravityCompat.START)) {
             binding.drawerLayout.closeDrawer(GravityCompat.START)
         } else {
-            // Opcional: Perguntar se deseja salvar antes de sair se houver alterações
             super.onBackPressed()
         }
     }
