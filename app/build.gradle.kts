@@ -67,7 +67,7 @@ dependencies {
     // Editor & Code Intelligence
     implementation("io.github.Rosemoe.sora-editor:editor:0.23.2")
     implementation("io.github.Rosemoe.sora-editor:language-textmate:0.23.2")
-    implementation("io.github.Rosemoe.sora-editor:language-java:0.23.2") // Suporte Java/Kotlin básico
+    implementation("io.github.Rosemoe.sora-editor:language-java:0.23.2")
 
     // Git Integration
     implementation("org.eclipse.jgit:org.eclipse.jgit:6.8.0.202311291450-r")
@@ -77,7 +77,7 @@ dependencies {
     implementation("com.android.tools.build:apksig:8.2.0")
     implementation("org.jetbrains.kotlin:kotlin-compiler-embeddable:1.9.21")
     implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.21")
-    // ECJ (Eclipse Compiler for Java) para compilar Java
+    // ECJ (Eclipse Compiler for Java)
     implementation("org.eclipse.jdt:ecj:3.36.0")
 
     implementation("com.google.code.gson:gson:2.10.1")
