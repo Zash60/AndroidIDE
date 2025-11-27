@@ -1,20 +1,94 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.drawerlayout.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto" android:id="@+id/drawerLayout"
-    android:layout_width="match_parent" android:layout_height="match_parent">
-    <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical">
-        <androidx.appcompat.widget.Toolbar android:id="@+id/toolbar" android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize" android:background="@color/purple_500"/>
-        <com.google.android.material.tabs.TabLayout android:id="@+id/tabLayout" android:layout_width="match_parent"
-            android:layout_height="wrap_content" app:tabMode="scrollable"/>
-        <io.github.rosemoe.sora.widget.CodeEditor android:id="@+id/codeEditor" android:layout_width="match_parent"
-            android:layout_height="match_parent" android:background="@color/editor_bg"/>
+<androidx.drawerlayout.widget.DrawerLayout 
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/drawerLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ui.editor.EditorActivity">
+
+    <!-- Área de Conteúdo Principal -->
+    <androidx.coordinatorlayout.widget.CoordinatorLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <!-- Layout Vertical para Toolbar, Tabs e Editor -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+
+            <com.google.android.material.appbar.AppBarLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+                
+                <androidx.appcompat.widget.Toolbar
+                    android:id="@+id/toolbar"
+                    android:layout_width="match_parent"
+                    android:layout_height="?attr/actionBarSize"
+                    android:background="@color/purple_500"
+                    app:titleTextColor="@color/white"
+                    app:navigationIcon="@drawable/ic_folder_open"/> <!-- Ícone de menu/pasta -->
+            </com.google.android.material.appbar.AppBarLayout>
+
+            <com.google.android.material.tabs.TabLayout
+                android:id="@+id/tabLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:tabMode="scrollable"
+                app:tabGravity="fill"
+                android:background="?android:attr/windowBackground"/>
+
+            <io.github.rosemoe.sora.widget.CodeEditor
+                android:id="@+id/codeEditor"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@color/editor_bg"
+                app:cursorBlinkPeriod="500"/>
+
+        </LinearLayout>
+
+        <!-- Botão Flutuante para criar arquivos -->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fabAddFile"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_margin="16dp"
+            android:src="@drawable/ic_file"
+            app:tint="@color/white"
+            app:backgroundTint="@color/purple_500"
+            android:contentDescription="Novo Arquivo"/>
+
+    </androidx.coordinatorlayout.widget.CoordinatorLayout>
+
+    <!-- Menu Lateral (Drawer) -->
+    <LinearLayout
+        android:layout_width="280dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        android:background="?android:attr/windowBackground"
+        android:orientation="vertical"
+        android:clickable="true"
+        android:focusable="true">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Arquivos do Projeto"
+            android:padding="16dp"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:background="@color/purple_500"
+            android:textColor="@color/white"/>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/fileTreeRecyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scrollbars="vertical"/>
+
     </LinearLayout>
-    <LinearLayout android:layout_width="280dp" android:layout_height="match_parent" android:layout_gravity="start"
-        android:background="@color/white" android:orientation="vertical">
-        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Arquivos"
-            android:padding="16dp" android:background="@color/purple_500" android:textColor="@color/white"/>
-        <androidx.recyclerview.widget.RecyclerView android:id="@+id/fileTreeRecyclerView"
-            android:layout_width="match_parent" android:layout_height="match_parent"/>
-    </LinearLayout>
+
 </androidx.drawerlayout.widget.DrawerLayout>
