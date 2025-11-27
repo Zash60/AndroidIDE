@@ -46,6 +46,7 @@ class EditorActivity : AppCompatActivity() {
         binding = ActivityEditorBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // Recuperar Projeto
         project = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             intent.getParcelableExtra("project", Project::class.java)!!
         } else {
@@ -60,6 +61,7 @@ class EditorActivity : AppCompatActivity() {
         setupTabs()
         loadProjectFiles()
 
+        // Botão flutuante para criar arquivos
         binding.fabAddFile.setOnClickListener {
             showCreateFileDialog()
         }
@@ -97,6 +99,7 @@ class EditorActivity : AppCompatActivity() {
         val showLines = PreferenceManager.isLineNumbersEnabled(this)
         val wordWrap = PreferenceManager.isWordWrapEnabled(this)
 
+        // CORREÇÃO: Usar método setTextSize em vez da propriedade
         binding.codeEditor.setTextSize(fontSize)
         binding.codeEditor.isLineNumberEnabled = showLines
         binding.codeEditor.isWordwrap = wordWrap
@@ -183,11 +186,10 @@ class EditorActivity : AppCompatActivity() {
         currentFile = file
         binding.codeEditor.setText(file.content)
         
-        // Define a linguagem do editor
+        // Define a linguagem do editor usando o BasicLanguage corrigido
         if (file.path.endsWith(".java")) {
             binding.codeEditor.setEditorLanguage(JavaLanguage())
         } else {
-            // Usa nossa linguagem básica (Auto-complete simples) para outros arquivos
             binding.codeEditor.setEditorLanguage(BasicLanguage())
         }
 
