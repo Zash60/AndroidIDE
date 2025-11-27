@@ -64,11 +64,11 @@ dependencies {
     implementation("androidx.recyclerview:recyclerview:1.3.2")
     implementation("androidx.drawerlayout:drawerlayout:1.2.0")
 
-    // --- EDITOR DEPENDENCIES (Versão atualizada) ---
-    implementation(platform("io.github.rosemoe.sora-editor:editor-bom:0.24.0"))
-    implementation("io.github.rosemoe.sora-editor:editor")
-    implementation("io.github.rosemoe.sora-editor:language-textmate")
-    implementation("io.github.rosemoe.sora-editor:language-java")
+    // --- EDITOR DEPENDENCIES (VERSÃO FUNCIONAL ATUAL - 0.23.0) ---
+implementation("io.github.rosemoe.sora-editor:editor:0.23.0")
+implementation("io.github.rosemoe.sora-editor:language-textmate:0.23.0")
+implementation("io.github.rosemoe.sora-editor:language-java:0.23.0")
+implementation("io.github.rosemoe.sora-editor:language-tree-sitter:0.23.0") // opcional, mas recomendado
 
     // Git Integration
     implementation("org.eclipse.jgit:org.eclipse.jgit:6.8.0.202311291450-r")
