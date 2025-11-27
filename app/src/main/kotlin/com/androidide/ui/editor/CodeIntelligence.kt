@@ -3,9 +3,14 @@ package com.androidide.ui.editor
 import android.os.Bundle
 import io.github.rosemoe.sora.lang.Language
 import io.github.rosemoe.sora.lang.analysis.AnalyzeManager
+// Correção do pacote do StyleReceiver (geralmente em analysis ou styling dependendo da versão exata,
+// mas para 0.23.2, ele é usado pelo AnalyzeManager, vamos assumir o pacote correto via import wildcard ou específico se falhar)
+import io.github.rosemoe.sora.lang.analysis.StyleReceiver
 import io.github.rosemoe.sora.lang.completion.CompletionPublisher
 import io.github.rosemoe.sora.lang.completion.SimpleCompletionItem
-import io.github.rosemoe.sora.lang.styling.StyleReceiver
+import io.github.rosemoe.sora.lang.format.Formatter
+import io.github.rosemoe.sora.lang.format.FormatResult
+import io.github.rosemoe.sora.lang.format.FormatOption
 import io.github.rosemoe.sora.text.CharPosition
 import io.github.rosemoe.sora.text.ContentReference
 
@@ -20,26 +25,45 @@ class BasicLanguage : Language() {
 
     override fun getAnalyzeManager(): AnalyzeManager {
         return object : AnalyzeManager {
-            // Método obrigatório da interface AnalyzeManager
+            // Implementação obrigatória: define o receptor de estilos (syntax highlighting)
             override fun setReceiver(receiver: StyleReceiver?) {
-                // Para BasicLanguage, não fazemos highlight, então ignoramos
+                // Como é uma linguagem básica sem highlight, ignoramos
             }
-            
-            // Em versões mais recentes do Sora-editor, a análise pode ser feita via return
-            // ou outros métodos, mas como é uma BasicLanguage vazia, este objeto basta
-            // para satisfazer a interface se não houver outros métodos abstratos.
+
+            // Implementação obrigatória: realiza a análise do código
+            override fun analyze(content: ContentReference) {
+                // Sem linting/análise
+            }
+
+            // Implementação obrigatória: reseta o estado da análise
+            override fun reset(content: ContentReference, extraArguments: Bundle) {
+                // Sem estado para resetar
+            }
         }
     }
 
     override fun getInterruptionLevel(): Int = 0
 
-    // Método obrigatório: define o avanço da indentação (0 = sem indentação automática inteligente)
     override fun getIndentAdvance(content: ContentReference, line: Int, column: Int): Int {
         return 0
     }
 
-    // Método obrigatório: define se usa TAB ou espaços
     override fun useTab(): Boolean = true
+
+    // Implementação obrigatória: Fornece um formatador de código
+    override fun getFormatter(): Formatter {
+        return object : Formatter {
+            override fun format(
+                text: ContentReference,
+                cursorRange: CharPosition,
+                options: FormatOption,
+                extraArguments: Bundle
+            ): FormatResult? {
+                // Retorna null indicando que não há formatação disponível
+                return null
+            }
+        }
+    }
 
     override fun requireAutoComplete(
         content: ContentReference,
@@ -48,7 +72,6 @@ class BasicLanguage : Language() {
         extraArguments: Bundle
     ) {
         keywords.forEach { kw ->
-            // Label, Descrição, Score, Tipo
             publisher.addItem(SimpleCompletionItem(kw, "Keyword", kw.length, "Basic"))
         }
     }
