@@ -1,7 +1,7 @@
 package com.androidide.ui.editor
 
 import android.graphics.Color
-import io.github.rosemoe.sora.widget.EditorColorScheme
+import io.github.Rosemoe.sora.widget.EditorColorScheme  // Corrected import (capital 'R' in Rosemoe)
 
 class DraculaColorScheme : EditorColorScheme() {
 
