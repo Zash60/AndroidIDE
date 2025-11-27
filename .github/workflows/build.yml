@@ -30,32 +30,15 @@ jobs:
       - name: 🤖 Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: 📦 Install SDK Components
-        run: sdkmanager "platforms;android-34" "build-tools;34.0.0"
+      - name: 📥 Download SDK Assets (aapt2, android.jar)
+        run: |
+          chmod +x scripts/download-sdk.sh
+          ./scripts/download-sdk.sh
 
       - name: 🔨 Generate Gradle Wrapper
         run: |
           gradle wrapper --gradle-version 8.5
           chmod +x gradlew
-
-      # Criação manual das pastas necessárias para que o build não falhe por falta de arquivos
-      - name: 📂 Ensure Project Structure
-        run: |
-          mkdir -p app/src/main/assets/sdk
-          mkdir -p app/src/main/res/values
-          mkdir -p app/src/main/res/layout
-          mkdir -p app/src/main/res/drawable
-
-      - name: 📥 Download Dependencies (Inline)
-        run: |
-          # Download Android JAR se não existir
-          if [ ! -f "app/src/main/assets/sdk/android.jar" ]; then
-             curl -L "https://github.com/nicco88/android-jar/raw/master/android-34/android.jar" -o "app/src/main/assets/sdk/android.jar"
-          fi
-          # Download Kotlin Stdlib
-          if [ ! -f "app/src/main/assets/sdk/kotlin-stdlib.jar" ]; then
-             curl -L "https://repo1.maven.org/maven2/org/jetbrains/kotlin/kotlin-stdlib/1.9.21/kotlin-stdlib-1.9.21.jar" -o "app/src/main/assets/sdk/kotlin-stdlib.jar"
-          fi
 
       - name: 🔨 Build Debug APK
         run: ./gradlew assembleDebug --stacktrace
