@@ -6,7 +6,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
-import android.view.View
 import android.widget.CheckBox
 import android.widget.ImageButton
 import android.widget.TextView
@@ -91,7 +90,7 @@ class EditorActivity : AppCompatActivity() {
         binding.codeEditor.apply {
             setTextSize(14f)
             setTabWidth(4)
-            // APLICA O TEMA DRACULA AQUI
+            // APLICA O TEMA DRACULA
             colorScheme = DraculaColorScheme()
         }
     }
@@ -107,6 +106,7 @@ class EditorActivity : AppCompatActivity() {
     }
 
     private fun setupFileTree() {
+        // CORREÇÃO: Passando 'this' (Context) e o callback 'onFileAction'
         fileAdapter = FileAdapter(
             context = this,
             onFileClick = { file -> openFile(file) },
@@ -119,7 +119,7 @@ class EditorActivity : AppCompatActivity() {
     private fun handleFileAction(action: FileAdapter.Action, file: File) {
         when (action) {
             FileAdapter.Action.NEW_FILE -> {
-                // Abre o diálogo já apontando para a pasta selecionada
+                // Abre o diálogo apontando para a pasta selecionada
                 showCreateFileDialog(if (file.isDirectory) file else file.parentFile)
             }
             FileAdapter.Action.DELETE -> {
@@ -134,7 +134,6 @@ class EditorActivity : AppCompatActivity() {
                     .show()
             }
             FileAdapter.Action.RENAME -> {
-                // Implementação simples de renomear
                 val input = android.widget.EditText(this)
                 input.setText(file.name)
                 AlertDialog.Builder(this)
@@ -166,6 +165,7 @@ class EditorActivity : AppCompatActivity() {
     }
 
     private fun loadProjectFiles() {
+        // CORREÇÃO: Usando loadDirectory em vez de setFiles
         lifecycleScope.launch(Dispatchers.Main) {
             fileAdapter.loadDirectory(project.srcDir)
         }
@@ -225,7 +225,7 @@ class EditorActivity : AppCompatActivity() {
         if (file.path.endsWith(".java")) {
             binding.codeEditor.setEditorLanguage(JavaLanguage())
         } else {
-            // Usa sua classe BasicLanguage (ou SyntaxHighlighter customizado se implementado)
+            // Usa sua classe BasicLanguage (ou SyntaxHighlighter se implementado como wrapper)
             binding.codeEditor.setEditorLanguage(BasicLanguage()) 
         }
 
@@ -235,7 +235,6 @@ class EditorActivity : AppCompatActivity() {
         }
     }
 
-    // Recebe a pasta pai onde o arquivo será criado
     private fun showCreateFileDialog(parentFolder: File) {
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_create_file, null)
         val editName = dialogView.findViewById<TextInputEditText>(R.id.editFileName)
@@ -255,12 +254,10 @@ class EditorActivity : AppCompatActivity() {
     }
 
     private fun createNewFile(parentDir: File, name: String, isFolder: Boolean) {
-        // Permite subcaminhos ex: "layout/gg.xml"
         val newFile = File(parentDir, name)
 
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                // Garante que pastas intermediárias existam
                 newFile.parentFile?.mkdirs()
                 
                 if (isFolder) {
@@ -326,8 +323,7 @@ class EditorActivity : AppCompatActivity() {
                 if (binding.codeEditor.canRedo()) binding.codeEditor.redo()
                 true
             }
-            101 -> { // Git Pull
-                // Implementar lógica de pull se necessário
+            101 -> { 
                  lifecycleScope.launch(Dispatchers.IO) {
                     val success = GitManager.pull(project.projectDir)
                     withContext(Dispatchers.Main) {
