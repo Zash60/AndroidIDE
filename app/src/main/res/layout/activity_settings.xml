@@ -1,8 +1,71 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent"
-    android:layout_height="match_parent" android:orientation="vertical">
-    <androidx.appcompat.widget.Toolbar android:id="@+id/toolbar" android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize" android:background="@color/purple_500"/>
-    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="16dp"
-        android:text="Configurações em breve..."/>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/white">
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="@color/purple_500"
+        app:titleTextColor="@color/white"/>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="16dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Editor"
+                android:textColor="@color/purple_500"
+                android:textStyle="bold"
+                android:layout_marginBottom="16dp"/>
+
+            <!-- Tamanho da Fonte -->
+            <TextView
+                android:id="@+id/textFontSizeLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Tamanho da Fonte: 14sp"
+                android:textColor="@color/black"/>
+
+            <SeekBar
+                android:id="@+id/seekFontSize"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="30"
+                android:min="10"
+                android:progress="14"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="24dp"/>
+
+            <!-- Números de Linha -->
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/switchLineNumbers"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Mostrar números de linha"
+                android:textColor="@color/black"
+                android:layout_marginBottom="16dp"/>
+                
+            <!-- Quebra de Linha -->
+             <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/switchWordWrap"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Quebra de linha automática (Word Wrap)"
+                android:textColor="@color/black"
+                android:layout_marginBottom="16dp"/>
+
+        </LinearLayout>
+    </ScrollView>
 </LinearLayout>
