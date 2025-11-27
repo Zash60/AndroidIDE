@@ -3,17 +3,18 @@ package com.androidide.ui.editor
 import android.os.Bundle
 import io.github.rosemoe.sora.lang.Language
 import io.github.rosemoe.sora.lang.analysis.AnalyzeManager
-import io.github.rosemoe.sora.lang.styling.StyleReceiver
 import io.github.rosemoe.sora.lang.completion.CompletionPublisher
 import io.github.rosemoe.sora.lang.completion.SimpleCompletionItem
+import io.github.rosemoe.sora.lang.completion.SymbolPairMatch
 import io.github.rosemoe.sora.lang.format.Formatter
-import io.github.rosemoe.sora.lang.smartEnter.SymbolPairMatch
+import io.github.rosemoe.sora.lang.smartEnter.NewlineHandler
+import io.github.rosemoe.sora.lang.styling.StylesReceiver
 import io.github.rosemoe.sora.text.CharPosition
 import io.github.rosemoe.sora.text.Content
 import io.github.rosemoe.sora.text.ContentReference
-import io.github.rosemoe.sora.util.TextRange
+import io.github.rosemoe.sora.text.TextRange
 
-class BasicLanguage : Language() {
+class BasicLanguage : Language {
 
     private val keywords = listOf(
         "fun", "val", "var", "class", "object", "interface", "return",
@@ -24,7 +25,7 @@ class BasicLanguage : Language() {
 
     override fun getAnalyzeManager(): AnalyzeManager {
         return object : AnalyzeManager {
-            override fun setReceiver(receiver: StyleReceiver?) {
+            override fun setReceiver(receiver: StylesReceiver?) {
                 // Não usado para linguagem básica
             }
 
@@ -39,9 +40,11 @@ class BasicLanguage : Language() {
             override fun rerun() {
                 // Análise completa
             }
-            
-            // Em versões mais antigas/específicas pode ser necessário o reset
-             fun reset(content: ContentReference, extraArguments: Bundle) {
+
+            override fun reset(content: ContentReference, extraArguments: Bundle) {
+            }
+
+            override fun destroy() {
             }
         }
     }
@@ -56,7 +59,7 @@ class BasicLanguage : Language() {
 
     override fun getFormatter(): Formatter {
         return object : Formatter {
-            override fun format(text: Content, range: TextRange) {
+            override fun formatRegion(text: Content, from: TextRange, to: TextRange) {
                 // Formatação básica (nenhuma)
             }
         }
@@ -76,4 +79,6 @@ class BasicLanguage : Language() {
             publisher.addItem(SimpleCompletionItem(kw, "Keyword", kw.length, "Basic"))
         }
     }
+
+    override fun getNewlineHandlers(): Array<NewlineHandler>? = null
 }
