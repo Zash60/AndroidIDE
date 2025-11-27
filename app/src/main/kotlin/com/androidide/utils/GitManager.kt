@@ -37,7 +37,6 @@ object GitManager {
             git.add().addFilepattern(".").call()
             git.commit().setMessage(message).call()
             
-            // Push requer autenticação (Token do GitHub)
             if (token.isNotEmpty()) {
                 val credentials = UsernamePasswordCredentialsProvider(token, "")
                 git.push().setCredentialsProvider(credentials).call()
