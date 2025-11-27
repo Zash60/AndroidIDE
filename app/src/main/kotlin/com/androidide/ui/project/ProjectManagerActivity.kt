@@ -30,8 +30,15 @@ class ProjectManagerActivity : AppCompatActivity() {
         supportActionBar?.title = "Android IDE"
 
         setupRecyclerView()
+        
+        // Ação: Criar Novo Projeto
         binding.fabNewProject.setOnClickListener {
             startActivity(Intent(this, CreateProjectActivity::class.java))
+        }
+
+        // Ação: Clonar do GitHub
+        binding.fabGitClone.setOnClickListener {
+            startActivity(Intent(this, CloneRepoActivity::class.java))
         }
     }
 
@@ -78,7 +85,7 @@ class ProjectManagerActivity : AppCompatActivity() {
     private fun confirmDelete(project: Project) {
         AlertDialog.Builder(this)
             .setTitle("Excluir Projeto")
-            .setMessage("Excluir ${project.name}?")
+            .setMessage("Excluir ${project.name} e todos os arquivos?")
             .setPositiveButton("Excluir") { _, _ ->
                 ProjectManager.deleteProject(project)
                 loadProjects()
