@@ -23,7 +23,6 @@ import com.androidide.model.SourceFile
 import com.androidide.project.Project
 import com.androidide.ui.build.BuildActivity
 import com.androidide.ui.filemanager.FileAdapter
-import com.androidide.ui.project.CloneRepoActivity
 import com.androidide.utils.GitManager
 import com.androidide.utils.PreferenceManager
 import com.google.android.material.tabs.TabLayout
@@ -62,9 +61,9 @@ class EditorActivity : AppCompatActivity() {
         setupTabs()
         loadProjectFiles()
 
-        // Botão flutuante para criar arquivos
+        // Botão flutuante principal (cria na raiz src/main)
         binding.fabAddFile.setOnClickListener {
-            showCreateFileDialog()
+            showCreateFileDialog(project.srcDir)
         }
     }
 
@@ -92,6 +91,8 @@ class EditorActivity : AppCompatActivity() {
         binding.codeEditor.apply {
             setTextSize(14f)
             setTabWidth(4)
+            // APLICA O TEMA DRACULA AQUI
+            colorScheme = DraculaColorScheme()
         }
     }
 
@@ -105,15 +106,50 @@ class EditorActivity : AppCompatActivity() {
         binding.codeEditor.isWordwrap = wordWrap
     }
 
-    // CORREÇÃO AQUI: Instanciação do FileAdapter com os novos parâmetros
     private fun setupFileTree() {
         fileAdapter = FileAdapter(
             context = this,
             onFileClick = { file -> openFile(file) },
-            onFileReloadNeeded = { loadProjectFiles() } // Callback para recarregar após renomear/excluir
+            onFileAction = { action, file -> handleFileAction(action, file) }
         )
         binding.fileTreeRecyclerView.layoutManager = LinearLayoutManager(this)
         binding.fileTreeRecyclerView.adapter = fileAdapter
+    }
+
+    private fun handleFileAction(action: FileAdapter.Action, file: File) {
+        when (action) {
+            FileAdapter.Action.NEW_FILE -> {
+                // Abre o diálogo já apontando para a pasta selecionada
+                showCreateFileDialog(if (file.isDirectory) file else file.parentFile)
+            }
+            FileAdapter.Action.DELETE -> {
+                AlertDialog.Builder(this)
+                    .setTitle("Excluir")
+                    .setMessage("Excluir ${file.name}?")
+                    .setPositiveButton("Sim") { _, _ ->
+                        file.deleteRecursively()
+                        loadProjectFiles()
+                    }
+                    .setNegativeButton("Não", null)
+                    .show()
+            }
+            FileAdapter.Action.RENAME -> {
+                // Implementação simples de renomear
+                val input = android.widget.EditText(this)
+                input.setText(file.name)
+                AlertDialog.Builder(this)
+                    .setTitle("Renomear")
+                    .setView(input)
+                    .setPositiveButton("OK") { _, _ ->
+                        val newName = input.text.toString()
+                        if (newName.isNotEmpty()) {
+                            file.renameTo(File(file.parentFile, newName))
+                            loadProjectFiles()
+                        }
+                    }
+                    .show()
+            }
+        }
     }
 
     private fun setupTabs() {
@@ -129,10 +165,7 @@ class EditorActivity : AppCompatActivity() {
         })
     }
 
-    // CORREÇÃO AQUI: Uso do método loadDirectory em vez de setFiles
     private fun loadProjectFiles() {
-        // O novo adapter carrega a árvore sozinho a partir do diretório raiz
-        // Não é necessário passar a lista de arquivos manualmente
         lifecycleScope.launch(Dispatchers.Main) {
             fileAdapter.loadDirectory(project.srcDir)
         }
@@ -156,7 +189,6 @@ class EditorActivity : AppCompatActivity() {
 
     private fun addTab(sourceFile: SourceFile) {
         val tab = binding.tabLayout.newTab()
-        // Inflar layout customizado para a aba (com botão fechar)
         val tabView = LayoutInflater.from(this).inflate(R.layout.item_tab_custom, null)
         
         val title = tabView.findViewById<TextView>(R.id.tabTitle)
@@ -190,15 +222,11 @@ class EditorActivity : AppCompatActivity() {
         currentFile = file
         binding.codeEditor.setText(file.content)
         
-        // Aplica o Highlighting correto
         if (file.path.endsWith(".java")) {
             binding.codeEditor.setEditorLanguage(JavaLanguage())
-        } else if (file.path.endsWith(".kt")) {
-            // Nota: Se você não tiver uma classe KotlinLanguage completa, 
-            // use a BasicLanguage que definimos anteriormente, mas idealmente seria KotlinLanguage.
-            binding.codeEditor.setEditorLanguage(BasicLanguage()) 
         } else {
-            binding.codeEditor.setEditorLanguage(BasicLanguage())
+            // Usa sua classe BasicLanguage (ou SyntaxHighlighter customizado se implementado)
+            binding.codeEditor.setEditorLanguage(BasicLanguage()) 
         }
 
         val index = openFiles.indexOf(file)
@@ -207,40 +235,49 @@ class EditorActivity : AppCompatActivity() {
         }
     }
 
-    private fun showCreateFileDialog() {
+    // Recebe a pasta pai onde o arquivo será criado
+    private fun showCreateFileDialog(parentFolder: File) {
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_create_file, null)
         val editName = dialogView.findViewById<TextInputEditText>(R.id.editFileName)
         val checkFolder = dialogView.findViewById<CheckBox>(R.id.checkIsFolder)
 
         AlertDialog.Builder(this)
-            .setTitle("Novo Arquivo/Pasta")
+            .setTitle("Novo em: ${parentFolder.name}")
             .setView(dialogView)
             .setPositiveButton("Criar") { _, _ ->
                 val name = editName.text.toString()
                 if (name.isNotEmpty()) {
-                    createNewFile(name, checkFolder.isChecked)
+                    createNewFile(parentFolder, name, checkFolder.isChecked)
                 }
             }
             .setNegativeButton("Cancelar", null)
             .show()
     }
 
-    private fun createNewFile(name: String, isFolder: Boolean) {
-        val parentDir = project.srcDir 
+    private fun createNewFile(parentDir: File, name: String, isFolder: Boolean) {
+        // Permite subcaminhos ex: "layout/gg.xml"
         val newFile = File(parentDir, name)
 
         lifecycleScope.launch(Dispatchers.IO) {
             try {
+                // Garante que pastas intermediárias existam
+                newFile.parentFile?.mkdirs()
+                
                 if (isFolder) {
                     newFile.mkdirs()
                 } else {
                     newFile.createNewFile()
-                    if (newFile.extension == "kt") {
-                        newFile.writeText("package ${project.packageName}\n\nclass ${newFile.nameWithoutExtension} {\n}")
+                    // Templates básicos
+                    if (newFile.length() == 0L) {
+                        if (newFile.extension == "kt") {
+                            newFile.writeText("package ${project.packageName}\n\nclass ${newFile.nameWithoutExtension} {\n}")
+                        } else if (newFile.extension == "xml") {
+                             newFile.writeText("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<LinearLayout xmlns:android=\"http://schemas.android.com/apk/res/android\"\n    android:layout_width=\"match_parent\"\n    android:layout_height=\"match_parent\">\n</LinearLayout>")
+                        }
                     }
                 }
                 withContext(Dispatchers.Main) {
-                    loadProjectFiles() // Recarrega a árvore
+                    loadProjectFiles()
                     if (!isFolder) openFile(newFile)
                 }
             } catch (e: Exception) {
@@ -249,24 +286,6 @@ class EditorActivity : AppCompatActivity() {
                 }
             }
         }
-    }
-
-    private fun showGitDialog() {
-         AlertDialog.Builder(this)
-            .setTitle("Git Pull")
-            .setMessage("Atualizar projeto do repositório remoto?")
-            .setPositiveButton("Pull") { _, _ ->
-                lifecycleScope.launch(Dispatchers.IO) {
-                    val success = GitManager.pull(project.projectDir)
-                    withContext(Dispatchers.Main) {
-                        Toast.makeText(this@EditorActivity, 
-                            if(success) "Pull OK!" else "Erro no Pull", 
-                            Toast.LENGTH_SHORT).show()
-                        loadProjectFiles()
-                    }
-                }
-            }
-            .show()
     }
 
     private fun saveCurrentFile() {
@@ -281,7 +300,6 @@ class EditorActivity : AppCompatActivity() {
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.menu_editor, menu)
-        // Adiciona opção para abrir o Clone Activity se necessário, ou apenas Pull
         menu.add(0, 101, 0, "Git Pull")
         return true
     }
@@ -309,7 +327,14 @@ class EditorActivity : AppCompatActivity() {
                 true
             }
             101 -> { // Git Pull
-                showGitDialog()
+                // Implementar lógica de pull se necessário
+                 lifecycleScope.launch(Dispatchers.IO) {
+                    val success = GitManager.pull(project.projectDir)
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(this@EditorActivity, if(success) "Pull OK" else "Erro Pull", Toast.LENGTH_SHORT).show()
+                        loadProjectFiles()
+                    }
+                }
                 true
             }
             else -> super.onOptionsItemSelected(item)
