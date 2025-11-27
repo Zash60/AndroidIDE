@@ -2,40 +2,40 @@
 
 set -e
 
-echo "📥 Downloading SDK dependencies..."
+echo "📥 Downloading SDK dependencies (ARM64 for Android Device)..."
 
-SDK_DIR="app/src/main/assets/sdk"
-mkdir -p "$SDK_DIR"
+# Diretório onde os arquivos ficarão dentro do APK
+SDK_ASSETS_DIR="app/src/main/assets/sdk"
+mkdir -p "$SDK_ASSETS_DIR"
 
-# Android JAR (android.jar do SDK)
-ANDROID_JAR_URL="https://github.com/nicco88/android-jar/raw/master/android-34/android.jar"
-if [ ! -f "$SDK_DIR/android.jar" ]; then
+# 1. Android JAR (android.jar do SDK 34)
+if [ ! -f "$SDK_ASSETS_DIR/android.jar" ]; then
     echo "⬇️ Downloading android.jar..."
-    curl -L "$ANDROID_JAR_URL" -o "$SDK_DIR/android.jar"
+    curl -L "https://github.com/nicco88/android-jar/raw/master/android-34/android.jar" -o "$SDK_ASSETS_DIR/android.jar"
 fi
 
-# Kotlin Stdlib
+# 2. Kotlin Stdlib
 KOTLIN_VERSION="1.9.21"
-KOTLIN_STDLIB_URL="https://repo1.maven.org/maven2/org/jetbrains/kotlin/kotlin-stdlib/$KOTLIN_VERSION/kotlin-stdlib-$KOTLIN_VERSION.jar"
-if [ ! -f "$SDK_DIR/kotlin-stdlib.jar" ]; then
+if [ ! -f "$SDK_ASSETS_DIR/kotlin-stdlib.jar" ]; then
     echo "⬇️ Downloading kotlin-stdlib.jar..."
-    curl -L "$KOTLIN_STDLIB_URL" -o "$SDK_DIR/kotlin-stdlib.jar"
+    curl -L "https://repo1.maven.org/maven2/org/jetbrains/kotlin/kotlin-stdlib/$KOTLIN_VERSION/kotlin-stdlib-$KOTLIN_VERSION.jar" -o "$SDK_ASSETS_DIR/kotlin-stdlib.jar"
 fi
 
-# Core KTX (para APIs AndroidX básicas)
-CORE_KTX_VERSION="1.12.0"
-CORE_KTX_URL="https://repo1.maven.org/maven2/androidx/core/core-ktx/$CORE_KTX_VERSION/core-ktx-$CORE_KTX_VERSION.aar"
-if [ ! -f "$SDK_DIR/core-ktx.aar" ]; then
-    echo "⬇️ Downloading core-ktx.aar..."
-    curl -L "$CORE_KTX_URL" -o "$SDK_DIR/core-ktx.aar"
+# 3. AAPT2 (Binário ARM64 para rodar no celular)
+# Fonte: https://github.com/lzhiyong/android-sdk-tools
+if [ ! -f "$SDK_ASSETS_DIR/aapt2" ]; then
+    echo "⬇️ Downloading AAPT2 (arm64-v8a)..."
+    # URL direta para um binário aapt2 compilado para Android
+    curl -L "https://github.com/lzhiyong/android-sdk-tools/raw/master/android-14/aapt2" -o "$SDK_ASSETS_DIR/aapt2"
+    # Não precisamos dar chmod +x aqui porque isso é perdido ao empacotar no APK, 
+    # faremos isso via código Kotlin ao extrair.
 fi
 
-# Lambda stubs (para compilação)
-LAMBDA_STUBS_URL="https://github.com/nicco88/android-jar/raw/master/android-34/core-lambda-stubs.jar"
-if [ ! -f "$SDK_DIR/core-lambda-stubs.jar" ]; then
+# 4. Lambda Stubs (Opcional, mas útil para compatibilidade Java 8)
+if [ ! -f "$SDK_ASSETS_DIR/core-lambda-stubs.jar" ]; then
     echo "⬇️ Downloading core-lambda-stubs.jar..."
-    curl -L "$LAMBDA_STUBS_URL" -o "$SDK_DIR/core-lambda-stubs.jar" || echo "⚠️ Lambda stubs não disponível"
+    curl -L "https://github.com/nicco88/android-jar/raw/master/android-34/core-lambda-stubs.jar" -o "$SDK_ASSETS_DIR/core-lambda-stubs.jar" || echo "⚠️ Lambda stubs ignorado"
 fi
 
-echo "✅ SDK dependencies downloaded!"
-ls -la "$SDK_DIR/"
+echo "✅ SDK dependencies downloaded into assets!"
+ls -la "$SDK_ASSETS_DIR/"
