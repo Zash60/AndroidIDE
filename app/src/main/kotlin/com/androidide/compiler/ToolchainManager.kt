@@ -17,30 +17,28 @@ object ToolchainManager {
         copyAsset(context, "sdk/android.jar", File(sdkDir, "android.jar"))
         copyAsset(context, "sdk/kotlin-stdlib.jar", File(sdkDir, "kotlin-stdlib.jar"))
         
-        // 2. Copia e Prepara AAPT2
+        // 2. Copia AAPT2
         val aapt2 = File(sdkDir, "aapt2")
-        copyAsset(context, "sdk/aapt2", aapt2)
+        // Sempre tenta copiar novamente para garantir integridade, ou verifique existência
+        if (!aapt2.exists()) {
+            copyAsset(context, "sdk/aapt2", aapt2)
+        }
         
-        // 3. Dá permissão de execução (chmod +x)
+        // 3. FORÇA PERMISSÃO DE EXECUÇÃO (A parte crítica)
+        // O Android não permite executar se não tiver bit +x. 
+        // File.setExecutable() as vezes falha em alguns dispositivos, então usamos o shell.
         if (aapt2.exists()) {
-            val executable = aapt2.setExecutable(true)
-            if (!executable) {
-                // Fallback para versões antigas do Android que podem precisar de comando shell
-                Log.w(TAG, "setExecutable falhou via Java, tentando chmod...")
-                try {
-                    Runtime.getRuntime().exec("chmod 700 ${aapt2.absolutePath}").waitFor()
-                } catch (e: Exception) {
-                    Log.e(TAG, "Falha ao dar permissão ao aapt2", e)
-                }
+            try {
+                // chmod 777 garante leitura, escrita e execução para todos
+                val process = Runtime.getRuntime().exec("chmod 777 ${aapt2.absolutePath}")
+                process.waitFor()
+            } catch (e: Exception) {
+                Log.e(TAG, "Falha ao rodar chmod no aapt2", e)
             }
         }
     }
 
     private fun copyAsset(context: Context, assetPath: String, destFile: File) {
-        // Só copia se o arquivo não existir ou se tiver tamanho diferente (atualização)
-        // Para desenvolvimento, podemos forçar a cópia se deletarmos a pasta antes
-        if (destFile.exists()) return 
-
         try {
             context.assets.open(assetPath).use { input ->
                 FileOutputStream(destFile).use { output ->
@@ -65,7 +63,8 @@ object ToolchainManager {
         val exitCode = process.waitFor()
         
         if (exitCode != 0) {
-            throw RuntimeException("Command failed ($exitCode):\n${command.joinToString(" ")}\nOutput:\n$output")
+            // Log mais detalhado para debug
+            throw RuntimeException("Command failed ($exitCode):\nCmd: ${command.joinToString(" ")}\nOutput:\n$output")
         }
         return output
     }
