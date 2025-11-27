@@ -65,10 +65,10 @@ dependencies {
     implementation("androidx.drawerlayout:drawerlayout:1.2.0")
 
     // --- EDITOR DEPENDENCIES (Versão atualizada) ---
-    // Se o Maven Central falhar, o JitPack (configurado no settings.gradle.kts) resolverá.
-    implementation("io.github.Rosemoe.sora-editor:editor:0.23.3")
-implementation("io.github.Rosemoe.sora-editor:language-textmate:0.23.3")
-implementation("io.github.Rosemoe.sora-editor:language-java:0.23.3")
+    implementation(platform("io.github.rosemoe.sora-editor:editor-bom:0.24.0"))
+    implementation("io.github.rosemoe.sora-editor:editor")
+    implementation("io.github.rosemoe.sora-editor:language-textmate")
+    implementation("io.github.rosemoe.sora-editor:language-java")
 
     // Git Integration
     implementation("org.eclipse.jgit:org.eclipse.jgit:6.8.0.202311291450-r")
