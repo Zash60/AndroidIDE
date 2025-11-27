@@ -3,16 +3,15 @@ package com.androidide.ui.editor
 import android.os.Bundle
 import io.github.rosemoe.sora.lang.Language
 import io.github.rosemoe.sora.lang.analysis.AnalyzeManager
-// Correção do pacote do StyleReceiver (geralmente em analysis ou styling dependendo da versão exata,
-// mas para 0.23.2, ele é usado pelo AnalyzeManager, vamos assumir o pacote correto via import wildcard ou específico se falhar)
-import io.github.rosemoe.sora.lang.analysis.StyleReceiver
+import io.github.rosemoe.sora.lang.styling.StyleReceiver
 import io.github.rosemoe.sora.lang.completion.CompletionPublisher
 import io.github.rosemoe.sora.lang.completion.SimpleCompletionItem
 import io.github.rosemoe.sora.lang.format.Formatter
-import io.github.rosemoe.sora.lang.format.FormatResult
-import io.github.rosemoe.sora.lang.format.FormatOption
+import io.github.rosemoe.sora.lang.smartEnter.SymbolPairMatch
 import io.github.rosemoe.sora.text.CharPosition
+import io.github.rosemoe.sora.text.Content
 import io.github.rosemoe.sora.text.ContentReference
+import io.github.rosemoe.sora.util.TextRange
 
 class BasicLanguage : Language() {
 
@@ -25,19 +24,24 @@ class BasicLanguage : Language() {
 
     override fun getAnalyzeManager(): AnalyzeManager {
         return object : AnalyzeManager {
-            // Implementação obrigatória: define o receptor de estilos (syntax highlighting)
             override fun setReceiver(receiver: StyleReceiver?) {
-                // Como é uma linguagem básica sem highlight, ignoramos
+                // Não usado para linguagem básica
             }
 
-            // Implementação obrigatória: realiza a análise do código
-            override fun analyze(content: ContentReference) {
-                // Sem linting/análise
+            override fun insert(start: CharPosition, end: CharPosition, insertedText: CharSequence) {
+                // Rastrear inserções se necessário
             }
 
-            // Implementação obrigatória: reseta o estado da análise
-            override fun reset(content: ContentReference, extraArguments: Bundle) {
-                // Sem estado para resetar
+            override fun delete(start: CharPosition, end: CharPosition, deletedText: CharSequence) {
+                // Rastrear deleções se necessário
+            }
+
+            override fun rerun() {
+                // Análise completa
+            }
+            
+            // Em versões mais antigas/específicas pode ser necessário o reset
+             fun reset(content: ContentReference, extraArguments: Bundle) {
             }
         }
     }
@@ -50,19 +54,16 @@ class BasicLanguage : Language() {
 
     override fun useTab(): Boolean = true
 
-    // Implementação obrigatória: Fornece um formatador de código
     override fun getFormatter(): Formatter {
         return object : Formatter {
-            override fun format(
-                text: ContentReference,
-                cursorRange: CharPosition,
-                options: FormatOption,
-                extraArguments: Bundle
-            ): FormatResult? {
-                // Retorna null indicando que não há formatação disponível
-                return null
+            override fun format(text: Content, range: TextRange) {
+                // Formatação básica (nenhuma)
             }
         }
+    }
+
+    override fun getSymbolPairs(): SymbolPairMatch {
+        return SymbolPairMatch.DefaultSymbolPairs
     }
 
     override fun requireAutoComplete(
