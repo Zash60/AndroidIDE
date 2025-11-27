@@ -32,10 +32,9 @@
         <activity android:name=".ui.project.ProjectManagerActivity" />
         <activity android:name=".ui.project.CreateProjectActivity" />
         
-        <!-- ADD THIS LINE BELOW -->
+        <!-- This was the missing activity causing the crash -->
         <activity android:name=".ui.project.CloneRepoActivity" />
-        <!-- ------------------- -->
-
+        
         <activity android:name=".ui.editor.EditorActivity" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".ui.build.BuildActivity" />
         <activity android:name=".ui.settings.SettingsActivity" />
