@@ -5,6 +5,9 @@ import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.widget.EditText
+import android.widget.LinearLayout
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -31,12 +34,10 @@ class ProjectManagerActivity : AppCompatActivity() {
 
         setupRecyclerView()
         
-        // Ação: Criar Novo Projeto
         binding.fabNewProject.setOnClickListener {
             startActivity(Intent(this, CreateProjectActivity::class.java))
         }
 
-        // Ação: Clonar do GitHub
         binding.fabGitClone.setOnClickListener {
             startActivity(Intent(this, CloneRepoActivity::class.java))
         }
@@ -71,14 +72,64 @@ class ProjectManagerActivity : AppCompatActivity() {
     }
 
     private fun showProjectOptions(project: Project) {
+        val options = arrayOf("Abrir", "Editar Configurações", "Excluir")
+        
         AlertDialog.Builder(this)
             .setTitle(project.name)
-            .setItems(arrayOf("Abrir", "Excluir")) { _, which ->
+            .setItems(options) { _, which ->
                 when (which) {
                     0 -> openProject(project)
-                    1 -> confirmDelete(project)
+                    1 -> showEditProjectDialog(project) // Nova função
+                    2 -> confirmDelete(project)
                 }
             }
+            .show()
+    }
+
+    private fun showEditProjectDialog(project: Project) {
+        // Layout simples criado via código para o Dialog
+        val layout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(50, 40, 50, 10)
+        }
+
+        val inputName = EditText(this).apply { 
+            hint = "Nome do Projeto"
+            setText(project.name)
+        }
+        
+        val inputPackage = EditText(this).apply { 
+            hint = "Package Name (ex: com.app)"
+            setText(project.packageName)
+        }
+
+        layout.addView(inputName)
+        layout.addView(inputPackage)
+
+        AlertDialog.Builder(this)
+            .setTitle("Editar Projeto")
+            .setView(layout)
+            .setPositiveButton("Salvar") { _, _ ->
+                val newName = inputName.text.toString()
+                val newPackage = inputPackage.text.toString()
+
+                if (newName.isNotEmpty() && newPackage.isNotEmpty()) {
+                    // Atualiza o objeto do projeto (Kotlin Data Class copy não altera o original in-place, cria um novo)
+                    // Mas como o Project tem var lastModified, precisamos salvar um novo json
+                    
+                    val updatedProject = project.copy(
+                        name = newName,
+                        packageName = newPackage
+                    )
+                    
+                    // Salva no disco
+                    updatedProject.save()
+                    
+                    Toast.makeText(this, "Salvo!", Toast.LENGTH_SHORT).show()
+                    loadProjects()
+                }
+            }
+            .setNegativeButton("Cancelar", null)
             .show()
     }
 
