@@ -64,10 +64,11 @@ dependencies {
     implementation("androidx.recyclerview:recyclerview:1.3.2")
     implementation("androidx.drawerlayout:drawerlayout:1.2.0")
 
-    // CORREÇÃO AQUI: "rosemoe" minúsculo para garantir compatibilidade com Maven Central
-    implementation("io.github.rosemoe.sora-editor:editor:0.23.2")
-    implementation("io.github.rosemoe.sora-editor:language-textmate:0.23.2")
-    implementation("io.github.rosemoe.sora-editor:language-java:0.23.2")
+    // --- EDITOR DEPENDENCIES (Versão atualizada) ---
+    // Se o Maven Central falhar, o JitPack (configurado no settings.gradle.kts) resolverá.
+    implementation("io.github.rosemoe.sora-editor:editor:0.23.3")
+    implementation("io.github.rosemoe.sora-editor:language-textmate:0.23.3")
+    implementation("io.github.rosemoe.sora-editor:language-java:0.23.3")
 
     // Git Integration
     implementation("org.eclipse.jgit:org.eclipse.jgit:6.8.0.202311291450-r")
@@ -77,6 +78,7 @@ dependencies {
     implementation("com.android.tools.build:apksig:8.2.0")
     implementation("org.jetbrains.kotlin:kotlin-compiler-embeddable:1.9.21")
     implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.21")
+    
     // ECJ (Eclipse Compiler for Java)
     implementation("org.eclipse.jdt:ecj:3.36.0")
 
