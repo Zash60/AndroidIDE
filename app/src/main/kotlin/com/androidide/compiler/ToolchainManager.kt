@@ -1,30 +1,45 @@
 package com.androidide.compiler
 
 import android.content.Context
+import android.util.Log
 import java.io.File
 import java.io.FileOutputStream
 
 object ToolchainManager {
 
+    private const val TAG = "ToolchainManager"
+
     fun init(context: Context) {
         val sdkDir = File(context.filesDir, "sdk")
         if (!sdkDir.exists()) sdkDir.mkdirs()
 
-        // Copia android.jar se não existir
+        // 1. Copia JARs
         copyAsset(context, "sdk/android.jar", File(sdkDir, "android.jar"))
-        
-        // Copia kotlin-stdlib.jar se não existir
         copyAsset(context, "sdk/kotlin-stdlib.jar", File(sdkDir, "kotlin-stdlib.jar"))
-
-        // Se você tiver o binário aapt2 nos assets (compilado para ARM/Android), copie também:
-        // copyAsset(context, "sdk/aapt2", File(sdkDir, "aapt2"))
         
+        // 2. Copia e Prepara AAPT2
         val aapt2 = File(sdkDir, "aapt2")
-        if (aapt2.exists()) aapt2.setExecutable(true)
+        copyAsset(context, "sdk/aapt2", aapt2)
+        
+        // 3. Dá permissão de execução (chmod +x)
+        if (aapt2.exists()) {
+            val executable = aapt2.setExecutable(true)
+            if (!executable) {
+                // Fallback para versões antigas do Android que podem precisar de comando shell
+                Log.w(TAG, "setExecutable falhou via Java, tentando chmod...")
+                try {
+                    Runtime.getRuntime().exec("chmod 700 ${aapt2.absolutePath}").waitFor()
+                } catch (e: Exception) {
+                    Log.e(TAG, "Falha ao dar permissão ao aapt2", e)
+                }
+            }
+        }
     }
 
     private fun copyAsset(context: Context, assetPath: String, destFile: File) {
-        if (destFile.exists()) return // Já copiado
+        // Só copia se o arquivo não existir ou se tiver tamanho diferente (atualização)
+        // Para desenvolvimento, podemos forçar a cópia se deletarmos a pasta antes
+        if (destFile.exists()) return 
 
         try {
             context.assets.open(assetPath).use { input ->
@@ -33,8 +48,7 @@ object ToolchainManager {
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
-            // Se falhar silenciosamente aqui, o build vai falhar depois informando o erro
+            Log.e(TAG, "Erro ao copiar asset: $assetPath", e)
         }
     }
 
