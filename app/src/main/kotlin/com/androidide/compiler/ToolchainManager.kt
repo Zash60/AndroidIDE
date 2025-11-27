@@ -19,21 +19,17 @@ object ToolchainManager {
         
         // 2. Copia AAPT2
         val aapt2 = File(sdkDir, "aapt2")
-        // Sempre tenta copiar novamente para garantir integridade, ou verifique existência
         if (!aapt2.exists()) {
             copyAsset(context, "sdk/aapt2", aapt2)
         }
         
-        // 3. FORÇA PERMISSÃO DE EXECUÇÃO (A parte crítica)
-        // O Android não permite executar se não tiver bit +x. 
-        // File.setExecutable() as vezes falha em alguns dispositivos, então usamos o shell.
+        // 3. TORNA EXECUTÁVEL (Substitua o bloco try-catch existente por isso)
         if (aapt2.exists()) {
-            try {
-                // chmod 777 garante leitura, escrita e execução para todos
-                val process = Runtime.getRuntime().exec("chmod 777 ${aapt2.absolutePath}")
-                process.waitFor()
-            } catch (e: Exception) {
-                Log.e(TAG, "Falha ao rodar chmod no aapt2", e)
+            if (!aapt2.setExecutable(true, false)) {  // true para executável, false para apenas o owner (app)
+                Log.e(TAG, "Falha ao tornar aapt2 executável")
+                // Opcional: Lance uma exceção ou notifique o usuário se falhar
+            } else {
+                Log.d(TAG, "aapt2 agora é executável")
             }
         }
     }
