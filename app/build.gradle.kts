@@ -64,10 +64,10 @@ dependencies {
     implementation("androidx.recyclerview:recyclerview:1.3.2")
     implementation("androidx.drawerlayout:drawerlayout:1.2.0")
 
-    // Editor & Code Intelligence
-    implementation("io.github.Rosemoe.sora-editor:editor:0.23.2")
-    implementation("io.github.Rosemoe.sora-editor:language-textmate:0.23.2")
-    implementation("io.github.Rosemoe.sora-editor:language-java:0.23.2")
+    // CORREÇÃO AQUI: "rosemoe" minúsculo para garantir compatibilidade com Maven Central
+    implementation("io.github.rosemoe.sora-editor:editor:0.23.2")
+    implementation("io.github.rosemoe.sora-editor:language-textmate:0.23.2")
+    implementation("io.github.rosemoe.sora-editor:language-java:0.23.2")
 
     // Git Integration
     implementation("org.eclipse.jgit:org.eclipse.jgit:6.8.0.202311291450-r")
