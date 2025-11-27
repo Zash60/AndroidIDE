@@ -23,6 +23,7 @@ import com.androidide.model.SourceFile
 import com.androidide.project.Project
 import com.androidide.ui.build.BuildActivity
 import com.androidide.ui.filemanager.FileAdapter
+import com.androidide.ui.project.CloneRepoActivity
 import com.androidide.utils.GitManager
 import com.androidide.utils.PreferenceManager
 import com.google.android.material.tabs.TabLayout
@@ -99,16 +100,18 @@ class EditorActivity : AppCompatActivity() {
         val showLines = PreferenceManager.isLineNumbersEnabled(this)
         val wordWrap = PreferenceManager.isWordWrapEnabled(this)
 
-        // CORREÇÃO: Usar método setTextSize em vez da propriedade
         binding.codeEditor.setTextSize(fontSize)
         binding.codeEditor.isLineNumberEnabled = showLines
         binding.codeEditor.isWordwrap = wordWrap
     }
 
+    // CORREÇÃO AQUI: Instanciação do FileAdapter com os novos parâmetros
     private fun setupFileTree() {
-        fileAdapter = FileAdapter { file ->
-            openFile(file)
-        }
+        fileAdapter = FileAdapter(
+            context = this,
+            onFileClick = { file -> openFile(file) },
+            onFileReloadNeeded = { loadProjectFiles() } // Callback para recarregar após renomear/excluir
+        )
         binding.fileTreeRecyclerView.layoutManager = LinearLayoutManager(this)
         binding.fileTreeRecyclerView.adapter = fileAdapter
     }
@@ -126,12 +129,12 @@ class EditorActivity : AppCompatActivity() {
         })
     }
 
+    // CORREÇÃO AQUI: Uso do método loadDirectory em vez de setFiles
     private fun loadProjectFiles() {
-        lifecycleScope.launch {
-            val files = withContext(Dispatchers.IO) {
-                project.srcDir.walkTopDown().toList()
-            }
-            fileAdapter.setFiles(files, project.srcDir)
+        // O novo adapter carrega a árvore sozinho a partir do diretório raiz
+        // Não é necessário passar a lista de arquivos manualmente
+        lifecycleScope.launch(Dispatchers.Main) {
+            fileAdapter.loadDirectory(project.srcDir)
         }
     }
 
@@ -153,6 +156,7 @@ class EditorActivity : AppCompatActivity() {
 
     private fun addTab(sourceFile: SourceFile) {
         val tab = binding.tabLayout.newTab()
+        // Inflar layout customizado para a aba (com botão fechar)
         val tabView = LayoutInflater.from(this).inflate(R.layout.item_tab_custom, null)
         
         val title = tabView.findViewById<TextView>(R.id.tabTitle)
@@ -186,9 +190,13 @@ class EditorActivity : AppCompatActivity() {
         currentFile = file
         binding.codeEditor.setText(file.content)
         
-        // Define a linguagem do editor usando o BasicLanguage corrigido
+        // Aplica o Highlighting correto
         if (file.path.endsWith(".java")) {
             binding.codeEditor.setEditorLanguage(JavaLanguage())
+        } else if (file.path.endsWith(".kt")) {
+            // Nota: Se você não tiver uma classe KotlinLanguage completa, 
+            // use a BasicLanguage que definimos anteriormente, mas idealmente seria KotlinLanguage.
+            binding.codeEditor.setEditorLanguage(BasicLanguage()) 
         } else {
             binding.codeEditor.setEditorLanguage(BasicLanguage())
         }
@@ -232,7 +240,7 @@ class EditorActivity : AppCompatActivity() {
                     }
                 }
                 withContext(Dispatchers.Main) {
-                    loadProjectFiles()
+                    loadProjectFiles() // Recarrega a árvore
                     if (!isFolder) openFile(newFile)
                 }
             } catch (e: Exception) {
@@ -246,7 +254,7 @@ class EditorActivity : AppCompatActivity() {
     private fun showGitDialog() {
          AlertDialog.Builder(this)
             .setTitle("Git Pull")
-            .setMessage("Atualizar projeto?")
+            .setMessage("Atualizar projeto do repositório remoto?")
             .setPositiveButton("Pull") { _, _ ->
                 lifecycleScope.launch(Dispatchers.IO) {
                     val success = GitManager.pull(project.projectDir)
@@ -273,6 +281,7 @@ class EditorActivity : AppCompatActivity() {
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.menu_editor, menu)
+        // Adiciona opção para abrir o Clone Activity se necessário, ou apenas Pull
         menu.add(0, 101, 0, "Git Pull")
         return true
     }
