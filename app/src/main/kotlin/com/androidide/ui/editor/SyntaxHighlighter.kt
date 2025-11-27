@@ -8,14 +8,16 @@ import java.util.regex.Pattern
 
 object SyntaxHighlighter {
 
-    // Cores
-    private const val COLOR_KEYWORD = 0xFFCC7832.toInt()      // Laranja
-    private const val COLOR_STRING = 0xFF6A8759.toInt()       // Verde
-    private const val COLOR_NUMBER = 0xFF6897BB.toInt()       // Azul claro
-    private const val COLOR_COMMENT = 0xFF808080.toInt()      // Cinza
-    private const val COLOR_ANNOTATION = 0xFFBBB529.toInt()   // Amarelo
-    private const val COLOR_FUNCTION = 0xFFFFC66D.toInt()     // Amarelo claro
-    private const val COLOR_TYPE = 0xFFA9B7C6.toInt()         // Cinza claro
+    // --- DRACULA THEME COLORS ---
+    private val COLOR_BACKGROUND = Color.parseColor("#282A36")
+    private val COLOR_FOREGROUND = Color.parseColor("#F8F8F2")
+    private val COLOR_COMMENT = Color.parseColor("#6272A4")
+    private val COLOR_CYAN = Color.parseColor("#8BE9FD") // Tipos, argumentos
+    private val COLOR_GREEN = Color.parseColor("#50FA7B") // Strings, Annotations
+    private val COLOR_ORANGE = Color.parseColor("#FFB86C") // Parameters
+    private val COLOR_PINK = Color.parseColor("#FF79C6") // Keywords
+    private val COLOR_PURPLE = Color.parseColor("#BD93F9") // Numbers, Constants
+    private val COLOR_YELLOW = Color.parseColor("#F1FA8C") // Strings alternativa
 
     // Kotlin keywords
     private val KOTLIN_KEYWORDS = listOf(
@@ -25,8 +27,7 @@ object SyntaxHighlighter {
         "private", "public", "protected", "internal", "open", "final",
         "override", "abstract", "sealed", "data", "companion", "init",
         "constructor", "this", "super", "null", "true", "false", "is", "as",
-        "in", "out", "suspend", "inline", "crossinline", "noinline", "reified",
-        "lateinit", "by", "lazy", "get", "set"
+        "in", "out", "suspend", "inline", "lateinit"
     )
 
     // Java keywords
@@ -34,55 +35,45 @@ object SyntaxHighlighter {
         "public", "private", "protected", "static", "final", "abstract",
         "class", "interface", "enum", "extends", "implements", "new",
         "void", "int", "long", "double", "float", "boolean", "char",
-        "byte", "short", "if", "else", "for", "while", "do", "switch",
-        "case", "default", "break", "continue", "return", "try", "catch",
-        "finally", "throw", "throws", "import", "package", "this", "super",
-        "null", "true", "false", "instanceof", "synchronized", "volatile",
-        "transient", "native", "strictfp"
+        "if", "else", "for", "while", "switch", "case", "return",
+        "try", "catch", "finally", "import", "package", "this", "super",
+        "null", "true", "false", "synchronized"
     )
-
-    // XML patterns
-    private val XML_TAG_PATTERN = Pattern.compile("</?[a-zA-Z][a-zA-Z0-9_:.-]*")
-    private val XML_ATTRIBUTE_PATTERN = Pattern.compile("\\s[a-zA-Z][a-zA-Z0-9_:.-]*=")
-    private val XML_STRING_PATTERN = Pattern.compile("\"[^\"]*\"")
-    private val XML_COMMENT_PATTERN = Pattern.compile("<!--.*?-->", Pattern.DOTALL)
 
     fun highlightKotlin(code: String): SpannableString {
         val spannable = SpannableString(code)
-        
-        // Keywords
-        highlightKeywords(spannable, code, KOTLIN_KEYWORDS, COLOR_KEYWORD)
-        
-        // Strings
-        highlightPattern(spannable, code, "\"([^\"\\\\]|\\\\.)*\"", COLOR_STRING)
-        
-        // Numbers
-        highlightPattern(spannable, code, "\\b\\d+(\\.\\d+)?[fFdDlL]?\\b", COLOR_NUMBER)
-        
-        // Single-line comments
-        highlightPattern(spannable, code, "//.*$", COLOR_COMMENT)
-        
-        // Multi-line comments
-        highlightPattern(spannable, code, "/\\*.*?\\*/", COLOR_COMMENT)
-        
-        // Annotations
-        highlightPattern(spannable, code, "@[a-zA-Z][a-zA-Z0-9_]*", COLOR_ANNOTATION)
-        
-        // Functions
-        highlightPattern(spannable, code, "\\bfun\\s+([a-zA-Z][a-zA-Z0-9_]*)", COLOR_FUNCTION)
-        
+
+        // 1. Strings (Aspas) -> Amarelo/Verde
+        highlightPattern(spannable, code, "\"[^\"\\\\]*(\\\\.[^\"\\\\]*)*\"", COLOR_YELLOW)
+
+        // 2. Comentários -> Cinza (importante vir depois de string para não pintar urls dentro de strings)
+        highlightPattern(spannable, code, "//.*", COLOR_COMMENT)
+        highlightPattern(spannable, code, "/\\*[\\s\\S]*?\\*/", COLOR_COMMENT)
+
+        // 3. Keywords -> Rosa
+        highlightKeywords(spannable, code, KOTLIN_KEYWORDS, COLOR_PINK)
+
+        // 4. Numbers -> Roxo
+        highlightPattern(spannable, code, "\\b\\d+(\\.\\d+)?([fFdDlL])?\\b", COLOR_PURPLE)
+
+        // 5. Annotations (@Something) -> Verde
+        highlightPattern(spannable, code, "@\\w+", COLOR_GREEN)
+
+        // 6. Funções (palavra antes de parenteses) -> Ciano
+        highlightPattern(spannable, code, "\\b\\w+(?=\\()", COLOR_CYAN)
+
         return spannable
     }
 
     fun highlightJava(code: String): SpannableString {
         val spannable = SpannableString(code)
         
-        highlightKeywords(spannable, code, JAVA_KEYWORDS, COLOR_KEYWORD)
-        highlightPattern(spannable, code, "\"([^\"\\\\]|\\\\.)*\"", COLOR_STRING)
-        highlightPattern(spannable, code, "\\b\\d+(\\.\\d+)?[fFdDlL]?\\b", COLOR_NUMBER)
-        highlightPattern(spannable, code, "//.*$", COLOR_COMMENT)
-        highlightPattern(spannable, code, "/\\*.*?\\*/", COLOR_COMMENT)
-        highlightPattern(spannable, code, "@[a-zA-Z][a-zA-Z0-9_]*", COLOR_ANNOTATION)
+        highlightPattern(spannable, code, "\"[^\"\\\\]*(\\\\.[^\"\\\\]*)*\"", COLOR_YELLOW)
+        highlightPattern(spannable, code, "//.*", COLOR_COMMENT)
+        highlightPattern(spannable, code, "/\\*[\\s\\S]*?\\*/", COLOR_COMMENT)
+        highlightKeywords(spannable, code, JAVA_KEYWORDS, COLOR_PINK)
+        highlightPattern(spannable, code, "\\b\\d+(\\.\\d+)?([fFdDlL])?\\b", COLOR_PURPLE)
+        highlightPattern(spannable, code, "@\\w+", COLOR_GREEN)
         
         return spannable
     }
@@ -90,45 +81,19 @@ object SyntaxHighlighter {
     fun highlightXml(code: String): SpannableString {
         val spannable = SpannableString(code)
         
-        // Tags
-        var matcher = XML_TAG_PATTERN.matcher(code)
-        while (matcher.find()) {
-            spannable.setSpan(
-                ForegroundColorSpan(COLOR_KEYWORD),
-                matcher.start(), matcher.end(),
-                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-            )
-        }
+        // Tags <...>
+        highlightPattern(spannable, code, "</?[\\w:.-]+", COLOR_PINK)
+        highlightPattern(spannable, code, ">", COLOR_PINK)
         
-        // Attributes
-        matcher = XML_ATTRIBUTE_PATTERN.matcher(code)
-        while (matcher.find()) {
-            spannable.setSpan(
-                ForegroundColorSpan(COLOR_FUNCTION),
-                matcher.start(), matcher.end() - 1,
-                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-            )
-        }
+        // Attributes name="value"
+        // Nome do atributo -> Ciano
+        highlightPattern(spannable, code, "\\s[\\w:.-]+=", COLOR_CYAN)
         
-        // Strings
-        matcher = XML_STRING_PATTERN.matcher(code)
-        while (matcher.find()) {
-            spannable.setSpan(
-                ForegroundColorSpan(COLOR_STRING),
-                matcher.start(), matcher.end(),
-                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-            )
-        }
+        // Valor do atributo -> Amarelo
+        highlightPattern(spannable, code, "\"[^\"]*\"", COLOR_YELLOW)
         
-        // Comments
-        matcher = XML_COMMENT_PATTERN.matcher(code)
-        while (matcher.find()) {
-            spannable.setSpan(
-                ForegroundColorSpan(COLOR_COMMENT),
-                matcher.start(), matcher.end(),
-                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-            )
-        }
+        // Comentários
+        highlightPattern(spannable, code, "<!--[\\s\\S]*?-->", COLOR_COMMENT)
         
         return spannable
     }
@@ -139,17 +104,9 @@ object SyntaxHighlighter {
         keywords: List<String>,
         color: Int
     ) {
-        keywords.forEach { keyword ->
-            val pattern = Pattern.compile("\\b$keyword\\b")
-            val matcher = pattern.matcher(code)
-            while (matcher.find()) {
-                spannable.setSpan(
-                    ForegroundColorSpan(color),
-                    matcher.start(), matcher.end(),
-                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-                )
-            }
-        }
+        // Otimização: Criar um regex único para todas as keywords
+        val patternString = "\\b(" + keywords.joinToString("|") + ")\\b"
+        highlightPattern(spannable, code, patternString, color)
     }
 
     private fun highlightPattern(
@@ -159,7 +116,7 @@ object SyntaxHighlighter {
         color: Int
     ) {
         try {
-            val pattern = Pattern.compile(patternString, Pattern.MULTILINE or Pattern.DOTALL)
+            val pattern = Pattern.compile(patternString)
             val matcher = pattern.matcher(code)
             while (matcher.find()) {
                 spannable.setSpan(
@@ -169,7 +126,7 @@ object SyntaxHighlighter {
                 )
             }
         } catch (e: Exception) {
-            // Ignorar erros de regex
+            // Ignorar erros de regex complexos
         }
     }
 }
